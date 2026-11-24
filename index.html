@@ -4124,6 +4124,8 @@ window.DY_RESUME = {
   const matches = phone.matches;
   const reduce = matchMedia('(prefers-reduced-motion: reduce)');
   document.body.classList.toggle('is-touch-layout', matches);
+  navigator.serviceWorker?.register('./mobile-video-worker.js').catch(() => {});
+
 
   const contact = document.getElementById('contact-mobile-art');
   const landscape = document.getElementById('enter-landscape');
