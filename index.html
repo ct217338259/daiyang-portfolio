@@ -4170,7 +4170,18 @@ window.DY_RESUME = {
     hint.hidden = false;
     hintTimer = setTimeout(clearHint, 5500);
   });
-  orientation.addEventListener('change', clearHint);
+  function positionForTime(time) {
+    return document.getElementById('scroll-track').offsetTop + window.DYGalleryTimeline.timePosition(time);
+  }
+
+  orientation.addEventListener('change', () => {
+    clearHint();
+    if (!matches || document.body.dataset.overlay) return;
+    const time = window.DYGalleryTimeline.state.mediaTime;
+    const restore = () => window.scrollTo({top: positionForTime(time), behavior: 'instant'});
+    restore();
+    requestAnimationFrame(restore);
+  });
   reduce.addEventListener('change', () => {
     if (reduce.matches) contact.pause();
     else if (contactVisible) {
@@ -4179,7 +4190,7 @@ window.DY_RESUME = {
     }
   });
 
-  window.DYMobileLayout = { matches, prepareMedia, updateContact };
+  window.DYMobileLayout = { matches, prepareMedia, updateContact, orientation, positionForTime };
 })();
 
 </script>
@@ -5043,7 +5054,9 @@ window.DY_CASES = [
   const volume = document.getElementById('player-volume');
   const status = document.getElementById('player-status');
   const qualityButton = document.getElementById('player-quality');
-  const mobile = window.DYMobileLayout.matches;
+  const mobileLayout = window.DYMobileLayout;
+  const mobile = mobileLayout.matches;
+  let savedMobileView = null;
   let useOriginal = !mobile, startupTimer = 0, tryingToPlay = false;
   const times = new Map();
   let activeItem = null, pendingTime = 0, playerToken = 0;
@@ -5124,6 +5137,7 @@ window.DY_CASES = [
   function lockPage() {
     if(savedScroll!==null)return;
     savedScroll=window.scrollY;
+    if(mobile)savedMobileView={landscape:mobileLayout.orientation.matches,time:window.DYGalleryTimeline.state.mediaTime};
     document.body.dataset.overlay='open';
     document.body.style.position='fixed';
     document.body.style.top=`-${savedScroll}px`;
@@ -5131,7 +5145,9 @@ window.DY_CASES = [
   }
   function unlockPage() {
     if(document.getElementById('film-board')?.open||document.getElementById('design-detail')?.open||document.getElementById('design-zoom')?.open||folderDialog.open||archive.open||playerDialog.open||aboutDialog.open||caseDialog?.open||savedScroll===null)return;
-    const top=savedScroll;savedScroll=null;
+    const top=savedMobileView&&savedMobileView.landscape!==mobileLayout.orientation.matches
+      ? mobileLayout.positionForTime(savedMobileView.time) : savedScroll;
+    savedScroll=null;savedMobileView=null;
     delete document.body.dataset.overlay;
     document.body.style.position='';document.body.style.top='';document.body.style.width='';
     window.scrollTo({top,behavior:'instant'});
