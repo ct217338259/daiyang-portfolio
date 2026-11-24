@@ -3124,6 +3124,349 @@ body[data-site-chapter=contact] .header [data-chapter-label=contact] {
 }
 
 </style>
+  <style data-source="mobile-layout.css">
+.header-actions {
+  justify-self: end;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.landscape-button,
+.landscape-hint,
+.folder-mobile-art,
+.contact-mobile-art {
+  display: none;
+}
+
+.intro-poses {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  background-position: center;
+  background-size: contain;
+  background-repeat: no-repeat;
+  pointer-events: none;
+  visibility: hidden;
+}
+
+body[data-mode="intro"] .intro-poses[data-pose] { visibility: visible; }
+body[data-mode="intro"]:has(.intro-poses[data-pose]) #intro-video { visibility: hidden; }
+
+body.is-touch-layout .landscape-hint:not([hidden]) {
+  position: fixed;
+  display: block;
+  top: calc(var(--header-h) + env(safe-area-inset-top) + 8px);
+  right: var(--gutter);
+  left: var(--gutter);
+  z-index: 50;
+  max-width: 340px;
+  margin: 0 auto;
+  padding: 12px 16px;
+  border: 1px solid #f4e7d765;
+  border-radius: 12px;
+  background: #101929;
+  color: #fff1da;
+  font-size: 13px;
+  text-align: center;
+}
+
+body.is-touch-layout:is([data-site-chapter="folder"],[data-site-chapter="contact"]) #main-video,
+body.is-touch-layout #outro-video,
+body.is-touch-layout #portfolio .folder-scene-art {
+  visibility: hidden;
+}
+
+body.is-touch-layout #portfolio {
+  --mobile-scene-top: calc(var(--header-h) + env(safe-area-inset-top, 0px) + 10px);
+  --mobile-scene-bottom: calc(var(--footer-h) + env(safe-area-inset-bottom, 0px) + 10px);
+  display: grid;
+  grid-template-columns: minmax(0,1fr);
+  grid-template-rows: auto minmax(0,1fr) auto;
+  align-items: center;
+  justify-items: start;
+  gap: clamp(4px,1.5dvh,13px);
+  padding: var(--mobile-scene-top) max(var(--gutter),env(safe-area-inset-right))
+    var(--mobile-scene-bottom) max(var(--gutter),env(safe-area-inset-left));
+}
+
+body.is-touch-layout #portfolio .folder-scene-heading {
+  position: relative;
+  inset: auto;
+  width: auto;
+  transform: none;
+}
+
+body.is-touch-layout #portfolio .folder-scene-heading h2 {
+  font-size: clamp(32px,9vw,50px);
+  line-height: .98;
+}
+
+body.is-touch-layout #portfolio .folder-scene-heading > p:not(.chapter-kicker) {
+  margin-top: 10px;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+body.is-touch-layout #portfolio .folder-editorial { display: none; }
+
+body.is-touch-layout .folder-mobile-art {
+  display: grid;
+  grid-template-rows: auto minmax(0,1fr);
+  justify-items: center;
+  align-items: center;
+  align-self: stretch;
+  width: 100%;
+  min-height: 0;
+}
+
+.folder-mobile-art > span {
+  justify-self: end;
+  margin-right: 5%;
+  color: #f6e9d4;
+  font: italic clamp(34px,13vw,67px)/.86 var(--font-display);
+  letter-spacing: -.075em;
+}
+
+.folder-mobile-art > img {
+  width: min(100%,440px);
+  height: 100%;
+  min-height: 0;
+  object-fit: contain;
+  object-position: center;
+  mask-image: radial-gradient(ellipse 62% 65% at center,#000 61%,transparent 97%);
+}
+
+body.is-touch-layout #folder-home { justify-self: center; }
+
+body.is-touch-layout :is(#folder-home,#folder-portal) .folder-mover {
+  position: relative;
+  inset: auto;
+  width: min(226px,58vw,27dvh);
+  transform: rotate(-4deg);
+}
+
+body.is-touch-layout :is(#folder-home,#folder-portal) .folder-front {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 7% 7% 5% 14%;
+}
+
+body.is-touch-layout :is(#folder-home,#folder-portal) .folder-front strong {
+  font-size: clamp(17px,6.5vw,27px);
+  margin: 0;
+}
+
+body.is-touch-layout :is(#folder-home,#folder-portal) .folder-label { font-size: 8px; }
+body.is-touch-layout :is(#folder-home,#folder-portal) .folder-bottom { margin-top: 2px; font-size: 10px; }
+body.is-touch-layout :is(#folder-home,#folder-portal) .folder-arrow {
+  height: 23px;
+  width: 23px;
+  font-size: 15px;
+}
+
+body.is-touch-layout .folder-dialog {
+  background: #080e1c;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: max(14px,env(safe-area-inset-top)) max(15px,env(safe-area-inset-right))
+    max(14px,env(safe-area-inset-bottom)) max(15px,env(safe-area-inset-left));
+}
+
+body.is-touch-layout .folder-dialog-heading {
+  position: relative;
+  inset: auto;
+  opacity: 1;
+  transform: none;
+  margin-bottom: 15px;
+}
+
+body.is-touch-layout .folder-dialog-heading h2 { font-size: clamp(22px,6vw,38px); line-height: 1.12; }
+body.is-touch-layout .folder-dialog-heading p { font-size: 11px; margin-top: 7px; }
+body.is-touch-layout .folder-dialog-actions { flex-direction: column-reverse; align-items: flex-end; }
+
+body.is-touch-layout .folder-categories {
+  position: relative;
+  inset: auto;
+  z-index: 3;
+  grid-template-columns: repeat(2,minmax(0,1fr));
+  width: 100%;
+  gap: 12px;
+}
+
+body.is-touch-layout .folder-category {
+  transform: none;
+  margin: 0;
+  transition: opacity .18s ease-out;
+}
+
+body.is-touch-layout .folder-dialog.is-open .folder-category { transition-delay: 0ms; }
+body.is-touch-layout .folder-card-description { display: none; }
+
+body.is-touch-layout #folder-portal {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  justify-items: center;
+  margin-top: 18px;
+  opacity: .72;
+}
+body.is-touch-layout #folder-portal .folder-mover { width: min(115px,30vw); }
+body.is-touch-layout #folder-portal .film-folder { pointer-events: none; }
+body.is-touch-layout #folder-portal .folder-front strong { font-size: 14px; }
+body.is-touch-layout #folder-portal :is(.folder-tabs,.folder-label,.folder-bottom) { visibility: hidden; }
+body.is-touch-layout .folder-key-hint { display: none; }
+
+body.is-touch-layout #resume-story .journey-horizon {
+  transform: scaleY(.44);
+  transform-origin: center bottom;
+}
+
+body.is-touch-layout #outro-story { transition: none; }
+body.is-touch-layout #outro-story .contact-surface { gap: clamp(4px,1.1dvh,12px); }
+
+body.is-touch-layout .contact-mobile-art {
+  display: block;
+  grid-area: 2/1;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  max-height: 320px;
+  justify-self: center;
+  align-self: center;
+  object-fit: contain;
+  mask-image: radial-gradient(ellipse 65% 65% at center,#000 60%,transparent 100%);
+}
+
+body.is-touch-layout #outro-story .contact-qr-frame { width: clamp(92px,30vw,127px); }
+body.is-touch-layout .gallery-deck { touch-action: pan-y; }
+body.is-touch-layout .player-volume,
+body.is-touch-layout .player-hint { display: none; }
+
+@media (orientation: portrait) {
+  body.is-touch-layout .landscape-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    min-height: 44px;
+    padding: 0 8px;
+    border: 1px solid #f4e7d752;
+    border-radius: 8px;
+    background: #131a27;
+    color: #faf1de;
+    font-size: 11px;
+    white-space: nowrap;
+  }
+  body.is-touch-layout .header { gap: 7px; }
+  body.is-touch-layout .header .contact-nav { padding-inline: 8px; font-size: 11px; }
+  body.is-touch-layout .pill-nav-toggle { min-width: 44px; padding-inline: 8px; }
+  body.is-touch-layout .gallery-meta { display: block; }
+  body.is-touch-layout .gallery-meta span { display: none; }
+  body.is-touch-layout .gallery-meta .gallery-input-hint { display: inline; margin-left: 9px; }
+}
+
+@media (orientation: portrait) and (max-height: 680px) {
+  body.is-touch-layout #portfolio .folder-scene-heading h2 { font-size: clamp(25px,7.4vw,39px); }
+  body.is-touch-layout #portfolio .folder-scene-heading > p:not(.chapter-kicker) { margin-top: 6px; }
+  body.is-touch-layout #folder-home .folder-mover { width: min(180px,50vw,24dvh); }
+  body.is-touch-layout #outro-story .contact-capabilities { display: none; }
+  body.is-touch-layout #outro-story .contact-qr-frame { width: clamp(88px,26vw,115px); }
+}
+
+@media (orientation: landscape) {
+  body.is-touch-layout #portfolio {
+    --mobile-scene-bottom: max(19px,env(safe-area-inset-bottom));
+    grid-template-columns: minmax(0,.79fr) minmax(0,1.21fr);
+    grid-template-rows: auto minmax(0,1fr);
+    align-items: start;
+    column-gap: clamp(15px,4vw,45px);
+  }
+  body.is-touch-layout .folder-mobile-art { grid-area: 1/2/3/3; }
+  body.is-touch-layout .folder-mobile-art > span { font-size: clamp(35px,13dvh,64px); }
+  body.is-touch-layout #portfolio .folder-scene-heading h2 { font-size: clamp(27px,10dvh,51px); }
+  body.is-touch-layout #portfolio .folder-scene-heading > p:not(.chapter-kicker) { display: block; }
+  body.is-touch-layout #folder-home { justify-self: start; align-self: end; }
+  body.is-touch-layout #folder-home .folder-mover { width: clamp(156px,43dvh,235px); }
+  body.is-touch-layout:is([data-site-chapter="folder"],[data-site-chapter="contact"]) .footer { display: none; }
+  body.is-touch-layout .folder-categories { grid-template-columns: repeat(4,minmax(0,1fr)); gap: 10px; }
+  body.is-touch-layout .folder-dialog-heading { align-items: center; }
+  body.is-touch-layout .folder-dialog-actions { flex-direction: row; }
+  body.is-touch-layout .folder-dialog-heading h2 { max-width: none; }
+  body.is-touch-layout #outro-story .contact-surface {
+    display: grid;
+    grid-template-columns: minmax(0,1.15fr) minmax(0,.85fr);
+    grid-template-rows: auto minmax(0,1fr);
+    gap: 6px 20px;
+    top: calc(var(--header-h) + max(9px,env(safe-area-inset-top)));
+    bottom: max(10px,env(safe-area-inset-bottom));
+    left: max(var(--gutter),env(safe-area-inset-left));
+    right: max(var(--gutter),env(safe-area-inset-right));
+    width: auto;
+    max-width: none;
+  }
+  body.is-touch-layout #outro-story .contact-intro { grid-area: 1/1; }
+  body.is-touch-layout #outro-story .site-headline { font-size: clamp(26px,9dvh,47px); }
+  body.is-touch-layout #outro-story .contact-intro-copy { margin-top: 4px; }
+  body.is-touch-layout #outro-story .contact-intro-copy h3,
+  body.is-touch-layout #outro-story .contact-specialties,
+  body.is-touch-layout #outro-story .contact-capabilities { display: none; }
+  body.is-touch-layout #outro-story .contact-receipt { grid-area: 1/2/3/3; align-self: center; }
+  body.is-touch-layout .contact-mobile-art { grid-area: 2/1; }
+  body.is-touch-layout .gallery-inner { padding-inline: max(var(--gutter),env(safe-area-inset-left)); }
+}
+
+@media (max-width: 355px) {
+  body.is-touch-layout .landscape-label { display: none; }
+  body.is-touch-layout .landscape-button { width: 38px; justify-content: center; }
+  body.is-touch-layout .header .contact-nav { padding-inline: 6px; }
+}
+
+
+@media (max-width: 355px), (orientation: landscape) {
+  body.is-touch-layout #folder-home .folder-label { display: none; }
+  body.is-touch-layout #folder-home .folder-front strong { font-size: clamp(17px,5.7dvh,25px); }
+  body.is-touch-layout #folder-home .folder-arrow { width: 19px; height: 19px; font-size: 12px; }
+}
+
+body.is-touch-layout .player-action-row { gap: 6px; }
+body.is-touch-layout .player-action-row button { padding-inline: 8px; }
+
+@media (orientation: landscape) {
+  body.is-touch-layout #outro-story {
+    position: fixed;
+    inset: calc(var(--header-h) + env(safe-area-inset-top) + 7px) 0 max(10px,env(safe-area-inset-bottom));
+  }
+  body.is-touch-layout #outro-story .contact-surface {
+    position: absolute;
+    inset: 0 max(var(--gutter),env(safe-area-inset-right)) 0 max(var(--gutter),env(safe-area-inset-left));
+    width: auto;
+    height: auto;
+    margin: 0;
+    padding: 0;
+  }
+  body.is-touch-layout #outro-story .contact-intro { margin: 0; }
+  body.is-touch-layout #outro-story .site-headline { margin: 5px 0 0; line-height: 1.03; }
+  body.is-touch-layout #outro-story .site-headline > span { display: inline; }
+  body.is-touch-layout #outro-story .site-headline::after { display: none; }
+}
+
+@media (orientation: portrait) and (max-width: 355px) {
+  body.is-touch-layout #folder-home .folder-front strong { font-size: 17px; }
+}
+
+@media (orientation: portrait) and (min-width: 701px) {
+  body.is-touch-layout #outro-story .contact-surface {
+    grid-template-columns: minmax(0,1fr);
+    grid-template-rows: auto minmax(0,1fr) auto auto;
+  }
+  body.is-touch-layout #outro-story .contact-intro { grid-area: 1/1; margin: 0; }
+  body.is-touch-layout #outro-story .contact-receipt { grid-area: 3/1; justify-self: center; }
+  body.is-touch-layout #outro-story .contact-capabilities { grid-area: 4/1; }
+}
+
+</style>
 </head>
 <body class="scroll-folder site-editorial intro2-hero main3-story" data-story-phase="intro" data-mode="intro">
   <button class="skip-link" data-progress="0.50" type="button">跳到作品</button>
@@ -3184,6 +3527,7 @@ body[data-site-chapter=contact] .header [data-chapter-label=contact] {
 
     <section class="story" id="outro-story" aria-label="第五章，求职与联系" aria-hidden="true" inert>
       <div class="chapter-surface contact-surface">
+        <video class="contact-mobile-art" id="contact-mobile-art" poster="media/scene-art/contact-mobile.webp" data-src="media/scene-art/contact-mobile.mp4" muted playsinline webkit-playsinline loop preload="none" aria-hidden="true"></video>
         <header class="contact-intro">
           
           <h2 class="site-headline" lang="en"><span class="contact-title-first">LET’S</span> <span class="contact-title-work">WORK</span></h2>
@@ -3264,6 +3608,10 @@ body[data-site-chapter=contact] .header [data-chapter-label=contact] {
       </svg>
     </div>
     <div class="folder-scene-heading"><h2><span>THE FILM</span> <span>ARCHIVE</span></h2><p>21 部影像作品，按四个方向归档。<br>Open a folder to watch the films.</p><div class="folder-editorial"><span>21 FILMS / 4 DIRECTIONS</span><button type="button" data-gallery-go>继续滚动，进入作品预览 ↓</button></div></div>
+    <div class="folder-mobile-art" aria-hidden="true">
+      <span>03</span>
+      <img src="media/scene-art/folder-mobile.webp" alt="" decoding="async">
+    </div>
     <span id="archive-total" class="sr-only">21 部影像 · 4 个分类 · 1 个可玩作品</span>
     <div id="folder-home">
       <div class="folder-mover" id="folder-mover">
@@ -3283,9 +3631,10 @@ body[data-site-chapter=contact] .header [data-chapter-label=contact] {
   </dialog>
 
   <div class="stage" aria-hidden="true">
-    <video id="intro-video" class="film is-visible" src="media/intro-web.mp4" poster="media/intro-fullscreen-poster.jpg" muted playsinline webkit-playsinline preload="auto" disablepictureinpicture></video>
-    <video id="main-video" class="film" src="media/main3-linear.mp4" poster="media/main3-poster.jpg" muted playsinline webkit-playsinline preload="auto" disablepictureinpicture></video>
-    <video id="outro-video" class="film" src="media/contact3-loop.mp4" poster="media/contact3-poster.jpg" muted playsinline webkit-playsinline preload="auto" disablepictureinpicture></video>
+    <video id="intro-video" class="film is-visible" data-src="media/intro-web.mp4" poster="media/intro-fullscreen-poster.jpg" muted playsinline webkit-playsinline preload="auto" disablepictureinpicture></video>
+    <div id="intro-poses" class="intro-poses"></div>
+    <video id="main-video" class="film" data-src="media/main3-linear.mp4" data-mobile-src="media/scene-art/timeline-mobile.mp4" poster="media/main3-poster.jpg" muted playsinline webkit-playsinline preload="auto" disablepictureinpicture></video>
+    <video id="outro-video" class="film" data-src="media/contact3-loop.mp4" poster="media/contact3-poster.jpg" muted playsinline webkit-playsinline preload="auto" disablepictureinpicture></video>
     <div class="scrim"></div>
   </div>
 
@@ -3307,7 +3656,8 @@ body[data-site-chapter=contact] .header [data-chapter-label=contact] {
         <button data-progress="1" data-site-chapter="contact">联系我</button>
       </div>
     </nav>
-    <button class="contact-nav" data-progress="0.50">看作品 ↗</button>
+    <div class="header-actions"><button class="contact-nav" data-progress="0.50">看作品 ↗</button><button id="enter-landscape" type="button" class="landscape-button" aria-label="横屏浏览"><span aria-hidden="true">⤢</span><span class="landscape-label">横屏</span></button></div>
+    <span id="landscape-hint" class="landscape-hint" role="status" hidden></span>
   </header>
 
 
@@ -3331,15 +3681,15 @@ body[data-site-chapter=contact] .header [data-chapter-label=contact] {
   <dialog class="player-dialog" id="player-dialog" aria-labelledby="player-title" aria-describedby="player-description">
     <header class="dialog-header"><div><h2 id="player-title">作品播放</h2><p id="player-description">完整成片</p></div><button class="dialog-close" id="player-close" type="button" aria-label="关闭视频播放器">×</button></header>
     <div class="player-screen"><video id="work-player" playsinline webkit-playsinline preload="metadata" aria-label="作品视频"></video><div class="player-status" id="player-status" role="status" hidden></div></div>
-    <div class="player-controls"><div class="player-progress-row"><output id="player-current">00:00</output><input id="player-progress" type="range" min="0" max="100" step="0.05" value="0" aria-label="拖动播放进度" disabled><output id="player-duration">00:00</output></div><div class="player-action-row"><div class="player-action-group"><button id="player-play" type="button">暂停</button><button id="player-mute" type="button" aria-pressed="false">静音</button><input class="player-volume" id="player-volume" type="range" min="0" max="1" step="0.05" value="1" aria-label="音量"></div><span class="player-hint">可拖动进度 · Esc 关闭</span><div class="player-action-group"><button id="player-retry" type="button">重试视频</button><button id="player-fullscreen" type="button">全屏</button></div></div></div>
+    <div class="player-controls"><div class="player-progress-row"><output id="player-current">00:00</output><input id="player-progress" type="range" min="0" max="100" step="0.05" value="0" aria-label="拖动播放进度" disabled><output id="player-duration">00:00</output></div><div class="player-action-row"><div class="player-action-group"><button id="player-play" type="button">暂停</button><button id="player-mute" type="button" aria-pressed="false">静音</button><input class="player-volume" id="player-volume" type="range" min="0" max="1" step="0.05" value="1" aria-label="音量"></div><span class="player-hint">可拖动进度 · Esc 关闭</span><div class="player-action-group"><button id="player-quality" type="button">切换原画</button><button id="player-retry" type="button">重试视频</button><button id="player-fullscreen" type="button">全屏</button></div></div></div>
   </dialog>
 
   <section class="design-gallery" id="design-gallery" aria-labelledby="gallery-title" aria-hidden="true" inert>
     <div class="gallery-backdrop" aria-hidden="true"></div>
     <div class="gallery-inner">
-      <header class="gallery-heading"><h2 id="gallery-title">SELECTED WORK</h2><p class="gallery-meta">7 CATEGORIES · 14 DESIGNS<span>视觉概念与电商作品</span><span>滚动或左右拖动 · 点击查看</span></p></header>
+      <header class="gallery-heading"><h2 id="gallery-title">SELECTED WORK</h2><p class="gallery-meta">7 CATEGORIES · 14 DESIGNS<span>视觉概念与电商作品</span><span class="gallery-input-hint">滚动或左右拖动 · 点击查看</span></p></header>
       <nav class="gallery-categories" id="gallery-categories" aria-label="七类设计作品"></nav>
-      <div class="gallery-deck" id="gallery-deck" aria-label="滚动或左右拖动浏览作品，也可使用左右方向键" tabindex="0"></div>
+      <div class="gallery-deck" id="gallery-deck" aria-label="左右滑动浏览作品，也可使用左右方向键" tabindex="0"></div>
       <div class="gallery-summary"><div><h3 id="gallery-category-title">IN-CAR<span>/ 车载</span></h3><p id="gallery-category-intro"></p></div><div class="gallery-actions"><output class="gallery-count" id="gallery-count" aria-label="当前作品">01 <small>/ 14</small></output><button class="gallery-action" type="button" id="gallery-prev" aria-label="上一件作品">←</button><button class="gallery-action" type="button" id="gallery-next" aria-label="下一件作品">→</button><button class="gallery-leave" type="button" id="gallery-leave">联系我 ↗</button></div></div>
     </div>
   </section>
@@ -3721,7 +4071,7 @@ window.DY_RESUME = {
     }
   }
   function intent(event,delta){
-    if(body.dataset.overlay||!delta)return;
+    if(body.dataset.overlay||!delta||window.DYMobileLayout?.matches)return;
     const now=performance.now();
     if(state.active||now<quietUntil){event.preventDefault();state.blockedInputs++;return;}
     lastIntent=now;inputKind='gesture';
@@ -3759,11 +4109,77 @@ window.DY_RESUME = {
     get active(){return state.active;},
     get galleryMix(){return galleryMix;},
     get forceMain(){return state.active&&['priming','playing','arriving'].includes(state.phase);},
-    goGallery:()=>timeline.state.phase==='folder'&&startGalleryFade(true),
+    goGallery:()=>!window.DYMobileLayout?.matches&&timeline.state.phase==='folder'&&startGalleryFade(true),
     update,
     consumeCompletion(){const value=completed;completed=false;return value;},
     snapshot:()=>({...state,mediaTime:video.currentTime,history:[...history]})
   });
+})();
+
+</script>
+  <script data-source="mobile-layout.js">
+'use strict';
+(() => {
+  const phone = matchMedia('(pointer: coarse) and (max-width: 1024px), (pointer: coarse) and (max-height: 540px), (max-width: 700px)');
+  const matches = phone.matches;
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)');
+  document.body.classList.toggle('is-touch-layout', matches);
+
+  const contact = document.getElementById('contact-mobile-art');
+  const landscape = document.getElementById('enter-landscape');
+  const hint = document.getElementById('landscape-hint');
+  const orientation = matchMedia('(orientation: landscape)');
+  let contactVisible = false;
+  let hintTimer;
+
+  function updateContact(visible) {
+    if (!matches || visible === contactVisible) return;
+    contactVisible = visible;
+    if (!visible) {
+      contact.pause();
+      return;
+    }
+    if (reduce.matches) return;
+    if (!contact.getAttribute('src')) contact.src = contact.dataset.src;
+    contact.play().catch(() => {});
+  }
+
+  function prepareMedia(main, outro) {
+    main.src = matches ? main.dataset.mobileSrc : main.dataset.src;
+    if (!matches) outro.src = outro.dataset.src;
+  }
+
+  function clearHint() {
+    clearTimeout(hintTimer);
+    hint.hidden = true;
+  }
+
+  landscape.addEventListener('click', async () => {
+    clearHint();
+    if (orientation.matches) return;
+    if (document.documentElement.requestFullscreen && screen.orientation?.lock) {
+      try {
+        await document.documentElement.requestFullscreen();
+        await screen.orientation.lock('landscape');
+        return;
+      } catch (_) {
+        if (document.fullscreenElement) await document.exitFullscreen().catch(() => {});
+      }
+    }
+    hint.textContent = '请把手机横过来，页面会自动切换。';
+    hint.hidden = false;
+    hintTimer = setTimeout(clearHint, 5500);
+  });
+  orientation.addEventListener('change', clearHint);
+  reduce.addEventListener('change', () => {
+    if (reduce.matches) contact.pause();
+    else if (contactVisible) {
+      contactVisible = false;
+      updateContact(true);
+    }
+  });
+
+  window.DYMobileLayout = { matches, prepareMedia, updateContact };
 })();
 
 </script>
@@ -3796,8 +4212,12 @@ window.DY_RESUME = {
       const intro = document.getElementById('intro-video');
       const main = document.getElementById('main-video');
       const outro = document.getElementById('outro-video');
+      const touchLayout = window.DYMobileLayout;
+      touchLayout.prepareMedia(main, outro);
+      const headPoseLayer = document.getElementById('intro-poses');
+      const readyHeadPoses = new Map();
       const films = { intro, main, outro };
-      const loops = [outro];
+      const loops = touchLayout.matches ? [] : [outro];
       const progressLine = document.getElementById('progress-line');
       const currentClock = document.getElementById('clock-current');
       const durationClock = document.getElementById('clock-duration');
@@ -3806,7 +4226,6 @@ window.DY_RESUME = {
       const noticeText = document.getElementById('notice-text');
       const retry = document.getElementById('media-retry');
       const motionQuery = matchMedia('(prefers-reduced-motion: reduce)');
-      const pointerQuery = matchMedia('(hover: hover) and (pointer: fine)');
       const OUTRO_START = .98;
       const SEEK_INTERVAL = 1000 / 30;
       const FPS = 60;
@@ -3825,6 +4244,14 @@ window.DY_RESUME = {
         { key: 'up-right', time: 2.8 }
       ];
       // 原片的两个镜头节奏边界，按实际加载到的 duration 等比例映射。
+      if (!touchLayout.matches && !motionQuery.matches) {
+        for (const {key} of [{ key: 'center' }, ...HEAD_POSES]) {
+          const frame = new Image();
+          frame.onload = () => readyHeadPoses.set(key, frame.src);
+          frame.onerror = () => { if (!intro.getAttribute('src')) intro.src = intro.dataset.src; };
+          frame.src = 'media/scene-art/intro-' + key + '.webp';
+        }
+      }
       const BEAT_BOUNDARIES = [9.25 / 19.25, 16.1 / 19.25];
       let duration = 14.6;
       let durationReady = false;
@@ -3966,7 +4393,7 @@ window.DY_RESUME = {
       });
 
       function readHeadDirection() {
-        if (!pointerActive || !pointerQuery.matches || motionQuery.matches) return -1;
+        if (!pointerActive || motionQuery.matches || touchLayout.matches) return -1;
         // 以完整视频中的人物头部为中心，补偿 contain 产生的居中留边。
         const videoWidth = intro.videoWidth || 1920;
         const videoHeight = intro.videoHeight || 1080;
@@ -3991,11 +4418,18 @@ window.DY_RESUME = {
         return next;
       }
       function seekHead(now, delta) {
-        if (requestedMode !== 'intro' || intro.readyState < 1 || !Number.isFinite(intro.duration)) return;
-        intro.pause();
+        if (requestedMode !== 'intro' || touchLayout.matches) return;
         headSector = readHeadDirection();
         const pose = headSector < 0 ? { key: 'center', time: HEAD_CENTER } : HEAD_POSES[headSector];
+        const frame = motionQuery.matches ? null : readyHeadPoses.get(pose.key);
+        if (frame && headPoseLayer.dataset.pose !== pose.key) {
+          headPoseLayer.style.backgroundImage = 'url("' + frame + '")';
+          headPoseLayer.dataset.pose = pose.key;
+        }
+        if (motionQuery.matches) delete headPoseLayer.dataset.pose;
         document.body.dataset.headDirection = pose.key;
+        if (frame || intro.readyState < 1 || !Number.isFinite(intro.duration)) return;
+        intro.pause();
         let sourceTime = pose.time;
         if (headSector >= 0) {
           // 相邻方向连续映射。跨视频首尾取较短的循环路径，
@@ -4074,10 +4508,11 @@ window.DY_RESUME = {
         // 首次主视频解码完成前保留当前画面，避免加载期间出现白屏。
         const nextReady = requestedMode === 'main'
           ? mainFrameReady && (visibleMode === 'main' || Math.abs(presentedMainTime - targetTime) < .12)
-          : films[requestedMode].readyState >= 2;
+          : requestedMode === 'intro' || touchLayout.matches || films[requestedMode].readyState >= 2;
         if (nextReady) changeVisibleMode(requestedMode);
         // Work scenes use the displayed video time, not a separate page section.
-        const visualP = window.DYGalleryTimeline.sceneProgress(durationReady ? presentedMainTime / duration : 0,p,window.DYChapterBridges?.galleryMix);
+        const visualP = window.DYGalleryTimeline.sceneProgress(touchLayout.matches ? targetTime / duration : durationReady ? presentedMainTime / duration : 0,p,window.DYChapterBridges?.galleryMix);
+        touchLayout.updateContact(requestedMode === 'outro');
         window.DYScrollScene?.update(visualP);
         window.DYDesignGallery?.update(now);
         window.DYTextMotion?.update(visualP, now);
@@ -4103,7 +4538,7 @@ window.DY_RESUME = {
         });
       });
       window.addEventListener('pointermove', event => {
-        if (!pointerQuery.matches || event.pointerType === 'touch') return;
+        if (event.pointerType !== 'mouse' && event.pointerType !== 'pen') return;
         pointerActive = true;
         pointerClientX = event.clientX;
         pointerClientY = event.clientY;
@@ -4607,6 +5042,9 @@ window.DY_CASES = [
   const progress = document.getElementById('player-progress');
   const volume = document.getElementById('player-volume');
   const status = document.getElementById('player-status');
+  const qualityButton = document.getElementById('player-quality');
+  const mobile = window.DYMobileLayout.matches;
+  let useOriginal = !mobile, startupTimer = 0, tryingToPlay = false;
   const times = new Map();
   let activeItem = null, pendingTime = 0, playerToken = 0;
   let category = '', savedScroll = null, returnFocus = null, fullReturnFocus = null;
@@ -4722,6 +5160,43 @@ window.DY_CASES = [
   function setStatus(message,error=false) {
     status.textContent=message;status.hidden=!message;status.classList.toggle('error',error);
   }
+  function stopStartupTimer() {
+    clearTimeout(startupTimer);
+    startupTimer = 0;
+  }
+  function watchStartup() {
+    if (startupTimer || !tryingToPlay || !playerDialog.open) return;
+    startupTimer = setTimeout(() => {
+      startupTimer = 0;
+      if (document.hidden || !activeItem || !playerDialog.open || !tryingToPlay) return;
+      setStatus(useOriginal ? '原画加载较慢，可切换流畅版。' : '视频加载较慢，请点击重试视频。', true);
+    }, 8500);
+  }
+  function playActive() {
+    tryingToPlay = true;
+    watchStartup();
+    const token = playerToken;
+    player.play().catch(error => {
+      if (token !== playerToken || !playerDialog.open || error.name === 'AbortError') return;
+      tryingToPlay = false;
+      stopStartupTimer();
+      setStatus(error.name === 'NotAllowedError' ? '点击播放开始观看。' : '视频暂未开始，请点击重试视频。', true);
+      playButton.textContent = '播放';
+    });
+  }
+  function setVideoSource() {
+    playerToken++;
+    stopStartupTimer();
+    tryingToPlay = false;
+    player.pause();
+    qualityButton.textContent = useOriginal ? '切换流畅版' : '切换原画';
+    const file = activeItem.full.split('/').pop();
+    player.src = useOriginal ? activeItem.full : 'media/mobile/' + file;
+    progress.disabled = true;
+    progress.value = String(pendingTime);
+    playButton.textContent = '播放';
+    setStatus(useOriginal ? '正在加载原画…' : '正在加载视频…');
+  }
   function openPlayer(item,startTime) {
     if(!item)return;
     stopHoverPreview();
@@ -4742,8 +5217,6 @@ window.DY_CASES = [
     fullReturnFocus=document.activeElement;
     activeItem=item;
     pendingTime=Number.isFinite(startTime)?startTime:times.get(item.id)??0;
-    playerToken++;
-    const token=playerToken;
     lockPage();
     player.pause();
     document.getElementById('player-title').textContent=item.title;
@@ -4751,19 +5224,14 @@ window.DY_CASES = [
     player.classList.toggle('is-portrait',Boolean(item.portrait));
     player.poster=item.poster;
     player.muted=false;player.defaultMuted=false;player.loop=false;player.volume=Number(volume.value);
-    player.src=item.full;
-    progress.disabled=true;progress.value='0';progress.max=String(item.duration);
+    useOriginal=!mobile;
+    progress.max=String(item.duration);
+    setVideoSource();
     document.getElementById('player-current').textContent=timeLabel(pendingTime);
     document.getElementById('player-duration').textContent=timeLabel(item.duration);
-    setStatus('正在加载完整视频…');
     playerDialog.showModal();
     document.getElementById('player-close').focus();
-    // Call play in the original click gesture; metadata will apply the preview position.
-    player.play().catch(error=>{
-      if(token!==playerToken||!playerDialog.open||error.name==='AbortError')return;
-      setStatus(error.name==='NotAllowedError'?'点击“播放”开启声音。':'视频暂未开始，点击“播放”重试。',true);
-      playButton.textContent='播放';
-    });
+    playActive();
   }
   archive.addEventListener('close',()=>{
     if(playerDialog.open)playerDialog.close();
@@ -4774,6 +5242,7 @@ window.DY_CASES = [
   });
   playerDialog.addEventListener('close',()=>{
     playerToken++;
+    tryingToPlay=false;stopStartupTimer();
     if(activeItem&&player.readyState>=1)times.set(activeItem.id,player.currentTime);
     player.pause();player.removeAttribute('src');player.load();setStatus('');
     activeItem=null;pendingTime=0;scrubbing=false;
@@ -4793,11 +5262,20 @@ window.DY_CASES = [
     player.currentTime=target;progress.disabled=false;progress.max=String(player.duration);progress.value=String(target);
     document.getElementById('player-duration').textContent=timeLabel(player.duration);
   });
-  player.addEventListener('playing',()=>{setStatus('');playButton.textContent='暂停';});
+  player.addEventListener('playing',()=>{stopStartupTimer();setStatus('');playButton.textContent='暂停';});
   player.addEventListener('pause',()=>{playButton.textContent='播放';});
-  player.addEventListener('waiting',()=>{if(playerDialog.open)setStatus('正在缓冲…');});
-  player.addEventListener('canplay',()=>{if(playerDialog.open)setStatus('');});
-  player.addEventListener('error',()=>{if(player.getAttribute('src')&&playerDialog.open)setStatus('视频无法加载，请点击“重试视频”。',true);});
+  player.addEventListener('waiting',()=>{
+    if(!playerDialog.open||!tryingToPlay)return;
+    setStatus('正在缓冲…');
+    watchStartup();
+  });
+  player.addEventListener('canplay',()=>{if(playerDialog.open){stopStartupTimer();setStatus('');}});
+  player.addEventListener('error',()=>{
+    if(!activeItem||!playerDialog.open||!player.error)return;
+    tryingToPlay=false;
+    stopStartupTimer();
+    setStatus(useOriginal ? '原画无法加载，可切换流畅版。' : '视频无法加载，可重试或切换原画。',true);
+  });
   player.addEventListener('volumechange',()=>{muteButton.textContent=player.muted||player.volume===0?'开启声音':'静音';muteButton.setAttribute('aria-pressed',String(player.muted));});
   player.addEventListener('timeupdate',()=>{
     if(!playerDialog.open)return;
@@ -4806,7 +5284,8 @@ window.DY_CASES = [
     progress.setAttribute('aria-valuetext',`${timeLabel(player.currentTime)} / ${timeLabel(player.duration||0)}`);
   });
   playButton.addEventListener('click',()=>{
-    if(player.paused)player.play().catch(()=>setStatus('播放未开始，请再次点击播放。',true));else player.pause();
+    if(player.paused)playActive();
+    else {tryingToPlay=false;stopStartupTimer();player.pause();}
   });
   muteButton.addEventListener('click',()=>{player.muted=!player.muted;});
   volume.addEventListener('input',()=>{player.volume=Number(volume.value);player.muted=player.volume===0;});
@@ -4819,7 +5298,17 @@ window.DY_CASES = [
   function finishScrub(){if(!scrubbing)return;scrubbing=false;if(scrubWasPlaying&&playerDialog.open)player.play().catch(()=>{});}
   progress.addEventListener('change',finishScrub);progress.addEventListener('pointerup',finishScrub);progress.addEventListener('pointercancel',finishScrub);
   document.getElementById('player-retry').addEventListener('click',()=>{
-    if(!activeItem)return;pendingTime=player.currentTime||pendingTime;player.load();setStatus('正在重新加载…');player.play().catch(()=>setStatus('点击“播放”继续。',true));
+    if(!activeItem)return;
+    pendingTime=player.currentTime||pendingTime;
+    setVideoSource();
+    playActive();
+  });
+  qualityButton.addEventListener('click',()=>{
+    if(!activeItem)return;
+    pendingTime=player.currentTime||pendingTime;
+    useOriginal=!useOriginal;
+    setVideoSource();
+    playActive();
   });
   document.getElementById('player-fullscreen').addEventListener('click',()=>{
     if(document.fullscreenElement){document.exitFullscreen().catch(()=>{});return;}
@@ -5257,6 +5746,10 @@ window.DY_CASES = [
       : '');
   }
   function placeFolder(open) {
+    if(window.DYMobileLayout?.matches){
+      if(!open)scene.style.setProperty('--folder-copy-opacity','1');
+      return;
+    }
     const w=window.innerWidth,h=window.innerHeight;
     const boxW=mover.offsetWidth||Math.min(340,w*.72),boxH=mover.offsetHeight||boxW*.68;
     const mobile=w<=700;
@@ -5338,6 +5831,7 @@ window.DY_CASES = [
     mover.style.transition='none';
     restoredFocus=document.activeElement;portfolio.lockPage();portal.append(mover);scene.inert=true;dialog.showModal();
     trigger.setAttribute('aria-expanded','true');trigger.setAttribute('aria-label','收起作品文件夹');
+    if(window.DYMobileLayout?.matches)portal.inert=true;
     document.body.classList.remove('folder-closing');document.body.classList.add('folder-focus');returnToOrigin();mover.getBoundingClientRect();mover.style.removeProperty('transition');
     openingFrame=requestAnimationFrame(()=>{openingFrame=0;if(!dialog.open||closing)return;dialog.classList.add('is-open');placeFolder(true);closeButton.focus({preventScroll:true});});
   }
@@ -5350,7 +5844,7 @@ window.DY_CASES = [
   }
   function restoreFolder() {
     clearTimeout(closeTimer);cancelAnimationFrame(openingFrame);openingFrame=0;
-    dialog.classList.remove('is-open');document.body.classList.remove('folder-focus','folder-closing');home.append(mover);
+    dialog.classList.remove('is-open');document.body.classList.remove('folder-focus','folder-closing');home.append(mover);portal.inert=false;
     trigger.setAttribute('aria-expanded','false');trigger.setAttribute('aria-label','展开作品文件夹');
     closing=false;folderOrigin=null;placeFolder(false);portfolio.unlockPage();updateScene(currentProgress);
     if(restoredFocus?.isConnected)restoredFocus.focus({preventScroll:true});
@@ -5359,7 +5853,7 @@ window.DY_CASES = [
     if(!dialog.open||closing)return;
     closing=true;cancelAnimationFrame(openingFrame);openingFrame=0;categoryGrid.inert=true;
     dialog.classList.remove('is-open');document.body.classList.add('folder-closing');returnToOrigin();
-    closeTimer=setTimeout(()=>dialog.close(),reduce.matches?0:620);
+    closeTimer=setTimeout(()=>dialog.close(),reduce.matches||window.DYMobileLayout?.matches?0:620);
   }
   trigger.addEventListener('click',()=>dialog.open?closeFolder():openFolder());closeButton.addEventListener('click',closeFolder);
   dialog.addEventListener('cancel',event=>{event.preventDefault();closeFolder();});
@@ -5431,10 +5925,11 @@ window.DY_DESIGNS={
   const root=document.getElementById('design-gallery'),deck=document.getElementById('gallery-deck');
   const categoryNav=document.getElementById('gallery-categories');
   const detail=document.getElementById('design-detail'),zoom=document.getElementById('design-zoom');
+  const mobile=window.DYMobileLayout.matches;
   const reduce=matchMedia('(prefers-reduced-motion: reduce)');
   const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const pad=n=>String(n).padStart(2,'0');
-  let current=0,detailIndex=0,position=0,active=false,lastTime=0,lastCategory=-1,restoreFocus=null,pushed=false,drag=null;
+  let current=0,detailIndex=0,position=0,active=false,lastTime=0,lastCategory=-1,restoreFocus=null,pushed=false,drag=null,swipeIndex=0;
   const src=item=>item.full||`media/designs/${item.id}.png`;
   const buttons=data.categories.map((cat,i)=>{
     const b=document.createElement('button');b.type='button';b.innerHTML=`<small>${pad(i+1)}</small>${esc(cat.zh)}<small>02</small>`;
@@ -5445,7 +5940,16 @@ window.DY_DESIGNS={
     b.innerHTML=`<img src="${esc(item.preview||`media/designs/${item.id}-preview.webp`)}" draggable="false" alt="${esc(item.title)}完整设计图" decoding="async" ${i>1?'loading="lazy"':''}><span class="gallery-card-caption"><strong>${esc(item.title)}</strong><span>VIEW / 查看 ↗</span></span>`;
     b.addEventListener('click',()=>{if(performance.now()-(deck._dragEnd||0)<250)return;open(i);});deck.append(b);return b;
   });
-  function go(index,instant=false){scrollTo({top:timeline.galleryPosition(index),behavior:instant||reduce.matches?'instant':'smooth'});}
+  const clampIndex=index=>Math.max(0,Math.min(cards.length-1,index));
+  function go(index,instant=false){
+    const target=clampIndex(index);
+    if(mobile){
+      swipeIndex=target;
+      if(active)return;
+    }
+    scrollTo({top:timeline.galleryPosition(target),behavior:instant||reduce.matches||mobile?'instant':'smooth'});
+  }
+  if(mobile)document.querySelector('.gallery-input-hint').textContent='左右滑动 · 点击查看';
   document.querySelectorAll('[data-gallery-go]').forEach(b=>b.addEventListener('click',()=>{
     if(!window.DYChapterBridges?.goGallery())go(0);
   }));
@@ -5485,18 +5989,41 @@ window.DY_DESIGNS={
     root.style.transition=state.crossfading?'none':'';
     root.style.pointerEvents=interactive?'':'none';
     root.inert=!interactive;root.setAttribute('aria-hidden',String(!interactive));
-    if(!active)return;
-    const target=Math.max(0,Math.min(13,(state.local-.035)/.93*13));
+    if(!active||(mobile&&drag?.moved))return;
+    const target=mobile?swipeIndex:clampIndex((state.local-.035)/.93*13);
     const dt=Math.min(.06,Math.max(0,(now-lastTime)/1000));lastTime=now;
     position=reduce.matches?Math.round(target):position+(target-position)*(1-Math.exp(-dt/.085));
     if(Math.abs(position-target)<.001)position=target;
     current=Math.round(position);paint();
   }
   deck.addEventListener('keydown',e=>{if(e.key==='ArrowRight'||e.key==='ArrowLeft'){e.preventDefault();go(current+(e.key==='ArrowRight'?1:-1));}});
-  deck.addEventListener('pointerdown',e=>{if(e.button!==0)return;drag={x:e.clientX,y:e.clientY,index:current,moved:false};});
-  deck.addEventListener('pointermove',e=>{if(!drag)return;const x=e.clientX-drag.x,y=e.clientY-drag.y;if(Math.abs(x)>15&&Math.abs(x)>Math.abs(y)*1.3){drag.moved=true;deck.setPointerCapture(e.pointerId);}});
-  deck.addEventListener('pointerup',e=>{if(!drag)return;if(drag.moved){deck._dragEnd=performance.now();const distance=e.clientX-drag.x;go(drag.index+(distance<0?1:-1));}drag=null;});
-  deck.addEventListener('pointercancel',()=>{drag=null;});
+  deck.addEventListener('pointerdown',e=>{
+    if(e.button!==0||!e.isPrimary)return;
+    drag={id:e.pointerId,x:e.clientX,y:e.clientY,index:mobile?swipeIndex:current,moved:false};
+  });
+  deck.addEventListener('pointermove',e=>{
+    if(!drag||drag.id!==e.pointerId)return;
+    const x=e.clientX-drag.x,y=e.clientY-drag.y;
+    if(!drag.moved&&Math.abs(x)>12&&Math.abs(x)>Math.abs(y)*1.25){
+      drag.moved=true;
+      deck.setPointerCapture(e.pointerId);
+    }
+    if(mobile&&drag.moved&&!reduce.matches){
+      const unit=Math.max(180,cards[current].offsetWidth*.76);
+      position=clampIndex(drag.index-x/unit);
+      paint();
+    }
+  });
+  deck.addEventListener('pointerup',e=>{
+    if(!drag||drag.id!==e.pointerId)return;
+    if(drag.moved){
+      deck._dragEnd=performance.now();
+      const distance=e.clientX-drag.x;
+      go(drag.index+(Math.abs(distance)>=32?(distance<0?1:-1):0));
+    }
+    drag=null;
+  });
+  deck.addEventListener('pointercancel',e=>{if(drag?.id===e.pointerId)drag=null;});
   deck.addEventListener('dragstart',e=>e.preventDefault());
   function renderDetail(){
     const item=data.items[detailIndex],cat=data.categories.find(c=>c.id===item.category);
@@ -5654,6 +6181,7 @@ window.DY_DESIGNS={
    Preserve the supplied 120% rise, 2.3/.7 stretch, back.inOut(2) and .03 stagger.
    Scene visibility triggers a timed entrance; wheel progress never scrubs text. */
 (() => {
+  if (window.DYMobileLayout?.matches) return;
   const reduce=matchMedia('(prefers-reduced-motion: reduce)');
   const clamp=n=>Math.max(0,Math.min(1,n));
   const segmenter=typeof Intl.Segmenter==='function'?new Intl.Segmenter('zh',{granularity:'grapheme'}):null;
