@@ -1,7 +1,6 @@
 'use strict';
 
 const mediaPath = new URL('media/mobile/', self.registration.scope).pathname;
-const introPath = new URL('media/scene-art/intro-pointer.mp4', self.registration.scope).pathname;
 
 self.addEventListener('install', event => {
   event.waitUntil(self.skipWaiting());
@@ -14,9 +13,8 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
   const request = event.request;
   const url = new URL(request.url);
-  const isSceneOrMobileVideo = url.pathname === introPath ||
-    (url.pathname.startsWith(mediaPath) && url.pathname.endsWith('.mp4'));
-  if (request.method !== 'GET' || url.origin !== self.location.origin || !isSceneOrMobileVideo) return;
+  if (request.method !== 'GET' || url.origin !== self.location.origin ||
+      !url.pathname.startsWith(mediaPath) || !url.pathname.endsWith('.mp4')) return;
 
   const range = /^bytes=(\d+)-(\d*)$/.exec(request.headers.get('Range') || '');
   if (!range) return;

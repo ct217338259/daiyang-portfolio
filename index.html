@@ -4109,26 +4109,7 @@ window.DY_RESUME = {
   const matches = phone.matches;
   const reduce = matchMedia('(prefers-reduced-motion: reduce)');
   document.body.classList.toggle('is-touch-layout', matches);
-  const worker = navigator.serviceWorker;
-  const workerScript = new URL('./mobile-video-worker.js?v=2', location.href);
-  const mediaReady = new Promise(resolve => {
-    if (!worker || worker.controller?.scriptURL === workerScript.href) {
-      resolve();
-      return;
-    }
-    const timeout = setTimeout(done, 2400);
-    function done() {
-      clearTimeout(timeout);
-      worker.removeEventListener('controllerchange', checkController);
-      resolve();
-    }
-    function checkController() {
-      if (worker.controller?.scriptURL === workerScript.href) done();
-    }
-    worker.addEventListener('controllerchange', checkController);
-    worker.register(workerScript).then(checkController, done);
-  });
-
+  navigator.serviceWorker?.register('./mobile-video-worker.js').catch(() => {});
 
   const contact = document.getElementById('contact-mobile-art');
   const landscape = document.getElementById('enter-landscape');
@@ -4195,7 +4176,7 @@ window.DY_RESUME = {
     }
   });
 
-  window.DYMobileLayout = { matches, prepareMedia, updateContact, orientation, positionForTime, mediaReady };
+  window.DYMobileLayout = { matches, prepareMedia, updateContact, orientation, positionForTime };
 })();
 
 </script>
@@ -4249,13 +4230,46 @@ window.DY_RESUME = {
       const HEAD_FRAME = 1 / 30;
       const HEAD_SETTLE_MS = 80;
 
-      let headLoadPending = false;
+      // Read the small motion asset into memory so cursor seeks never wait for another request.
+      async function fetchHeadMotion(src) {
+        const chunkSize = 256 * 1024;
+        const header = await fetch(src, { method: 'HEAD' });
+        const length = Number(header.headers.get('Content-Length'));
+        if (!header.ok || !length) return src;
+        const chunks = new Array(Math.ceil(length / chunkSize));
+        let nextChunk = 0;
+        async function loadChunk() {
+          while (nextChunk < chunks.length) {
+            const index = nextChunk++;
+            const start = index * chunkSize;
+            const end = Math.min(length, start + chunkSize) - 1;
+            for (let attempt = 0; attempt < 2; attempt++) {
+              try {
+                const response = await fetch(src, { headers: { Range: 'bytes=' + start + '-' + end } });
+                if (response.status !== 206) throw new Error('Expected a video range');
+                const bytes = await response.arrayBuffer();
+                if (bytes.byteLength !== end - start + 1) throw new Error('Incomplete video range');
+                chunks[index] = bytes;
+                break;
+              } catch (error) {
+                if (attempt === 1) throw error;
+              }
+            }
+          }
+        }
+        await Promise.all(Array.from({ length: Math.min(6, chunks.length) }, loadChunk));
+        return URL.createObjectURL(new Blob(chunks, { type: 'video/mp4' }));
+      }
+
+      let headSource;
       function loadHeadMotion() {
-        if (touchLayout.matches || motionQuery.matches || intro.hasAttribute('src') || headLoadPending) return;
-        headLoadPending = true;
-        touchLayout.mediaReady.then(() => {
-          headLoadPending = false;
-          if (!motionQuery.matches) intro.src = intro.dataset.src;
+        if (touchLayout.matches || motionQuery.matches || intro.hasAttribute('src')) return;
+        if (!headSource) {
+          const src = intro.dataset.src;
+          headSource = location.protocol === 'file:' ? Promise.resolve(src) : fetchHeadMotion(src).catch(() => src);
+        }
+        headSource.then(src => {
+          if (!motionQuery.matches && !intro.hasAttribute('src')) intro.src = src;
         });
       }
       loadHeadMotion();
@@ -4452,7 +4466,7 @@ window.DY_RESUME = {
         }
 
         const elapsed = now - lastHeadSeek;
-        if (elapsed < 28 || (intro.seeking && elapsed < 115)) return;
+        if (elapsed < 28 || intro.seeking) return;
         const delta = headDistance(headTime, headTarget, duration);
         if (Math.abs(delta) < HEAD_FRAME / 2) return;
         const step = Math.min(Math.abs(delta), 4 * Math.min(elapsed / 1000, .04));
