@@ -4885,7 +4885,8 @@ window.DY_PORTFOLIO = {
       "portrait": false,
       "fullBytes": 23555009,
       "previewBytes": 850152,
-      "shotVersion": 2,
+      "shotVersion": 3,
+      "shotTimes": [9.12, 59.28, 93.47],
       "previewStart": 3,
       "localPlayback": true
     },
@@ -4902,7 +4903,8 @@ window.DY_PORTFOLIO = {
       "portrait": false,
       "fullBytes": 20196867,
       "previewBytes": 1259390,
-      "shotVersion": 2,
+      "shotVersion": 3,
+      "shotTimes": [26, 66.22, 104.42],
       "previewStart": 3,
       "localPlayback": true
     },
@@ -6317,7 +6319,7 @@ window.DY_DESIGNS={
   window.DY_FILM_BOARDS=Object.fromEntries(window.DY_PORTFOLIO.items.map(item=>{
     const project=window.DY_CASES.find(c=>c.workId===item.id),c=copy[item.id];
     const shotSuffix=item.shotVersion?`?v=${item.shotVersion}`:'';
-    const shots=project?project.shots:[.18,.5,.8].map((p,i)=>({title:['起段画面','中段画面','收束画面'][i],time:Number((item.duration*p).toFixed(2)),image:`media/film-boards/${item.id}-${i+1}.jpg${shotSuffix}`}));
+    const shots=project?project.shots:[.18,.5,.8].map((p,i)=>({title:['起段画面','中段画面','收束画面'][i],time:item.shotTimes?.[i]??Number((item.duration*p).toFixed(2)),image:`media/film-boards/${item.id}-${i+1}.jpg${shotSuffix}`}));
     return [item.id,{line:c[0],summary:c[1],focus:c[2],method:c[3],project,shots,outcome:outcomes[item.id]}];
   }));
 })();
