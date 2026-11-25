@@ -3618,7 +3618,7 @@ body.is-touch-layout .player-action-row button { padding-inline: 8px; }
   </dialog>
 
   <div class="stage" aria-hidden="true">
-    <video id="intro-video" class="film is-visible" data-src="media/scene-art/intro-pointer-lite.mp4" poster="media/intro-fullscreen-poster.jpg" muted playsinline webkit-playsinline preload="auto" disablepictureinpicture></video>
+    <video id="intro-video" class="film is-visible" data-src="media/scene-art/intro-motion-duplex.mp4" data-motion-bytes="4106020" poster="media/intro-fullscreen-poster.jpg" muted playsinline webkit-playsinline preload="auto" disablepictureinpicture></video>
     <video id="main-video" class="film" data-src="media/scene-art/timeline-desktop.mp4" data-mobile-src="media/scene-art/timeline-mobile.mp4" poster="media/main3-poster.jpg" muted playsinline webkit-playsinline preload="auto" disablepictureinpicture></video>
     <video id="outro-video" class="film" data-src="media/scene-art/contact-desktop.mp4" poster="media/contact3-poster.jpg" muted playsinline webkit-playsinline preload="auto" disablepictureinpicture></video>
     <div class="scrim"></div>
@@ -4233,11 +4233,9 @@ window.DY_RESUME = {
       const HEAD_SETTLE_MS = 80;
 
       // Read the small motion asset into memory so cursor seeks never wait for another request.
-      async function fetchHeadMotion(src) {
-        const chunkSize = 640 * 1024;
-        const header = await fetch(src, { method: 'HEAD' });
-        const length = Number(header.headers.get('Content-Length'));
-        if (!header.ok || !length) return src;
+      async function fetchHeadMotion(src, length) {
+        const chunkSize = 768 * 1024;
+        if (!length) return src;
         const chunks = new Array(Math.ceil(length / chunkSize));
         let nextChunk = 0;
         async function loadChunk() {
@@ -4271,7 +4269,7 @@ window.DY_RESUME = {
         if (touchLayout.matches || motionQuery.matches || intro.hasAttribute('src')) return;
         if (!headSource) {
           const src = intro.dataset.src;
-          headSource = location.protocol === 'file:' ? Promise.resolve(src) : fetchHeadMotion(src).catch(() => src);
+          headSource = location.protocol === 'file:' ? Promise.resolve(src) : fetchHeadMotion(src, Number(intro.dataset.motionBytes)).catch(() => src);
         }
         headSource.then(src => {
           if (!motionQuery.matches && !intro.hasAttribute('src')) intro.src = src;
@@ -4324,9 +4322,17 @@ window.DY_RESUME = {
       let headSector = -1;
       let headCandidate = -1;
       let headCandidateSince = 0;
-      let headTime = HEAD_CENTER;
       let headTarget = HEAD_CENTER;
-      let lastHeadSeek = -Infinity;
+      let headPresented = NaN;
+      let headPlayPending = false;
+      intro.addEventListener('seeked', () => { headPresented = intro.currentTime; });
+      if (typeof intro.requestVideoFrameCallback === 'function') {
+        const recordHeadFrame = (_now, metadata) => {
+          if (!intro.seeking) headPresented = metadata.mediaTime;
+          intro.requestVideoFrameCallback(recordHeadFrame);
+        };
+        intro.requestVideoFrameCallback(recordHeadFrame);
+      }
 
       for (const film of Object.values(films)) {
         film.muted = true;
@@ -4338,7 +4344,6 @@ window.DY_RESUME = {
       intro.autoplay = false;
       intro.loop = false;
       intro.pause();
-      intro.addEventListener('play', () => intro.pause());
       // 避免隐藏尾屏从页面打开后一直解码；重新显露时再播放。
       outro.autoplay = false;
       outro.loop = false;
@@ -4457,7 +4462,8 @@ window.DY_RESUME = {
           headCandidateSince = now;
         }
 
-        const duration = intro.duration;
+        const frameCount = Math.round(intro.duration / (2 * HEAD_FRAME));
+        const duration = frameCount * HEAD_FRAME;
         if (motionQuery.matches || now - headCandidateSince >= HEAD_SETTLE_MS) {
           headSector = sector;
           if (!direction) {
@@ -4471,17 +4477,40 @@ window.DY_RESUME = {
           }
         }
 
-        const elapsed = now - lastHeadSeek;
-        if (elapsed < 28 || intro.seeking) return;
-        const delta = headDistance(headTime, headTarget, duration);
-        if (Math.abs(delta) < HEAD_FRAME / 2) return;
-        const step = Math.min(Math.abs(delta), 4 * Math.min(elapsed / 1000, .04));
-        const time = motionQuery.matches ? HEAD_CENTER : wrapHeadTime(headTime + Math.sign(delta) * step, duration);
-        const seekTime = Math.min(duration - HEAD_FRAME, Math.round(time / HEAD_FRAME) * HEAD_FRAME);
-        if (Math.abs(seekTime - intro.currentTime) < HEAD_FRAME / 2) return;
-        intro.currentTime = seekTime;
-        headTime = seekTime;
-        lastHeadSeek = now;
+        if (intro.seeking || intro.readyState < 2) return;
+        const mediaTime = Number.isFinite(headPresented) ? headPresented : intro.currentTime;
+        const frame = Math.min(2 * frameCount - 1, Math.round(mediaTime / HEAD_FRAME));
+        const reverse = frame >= frameCount;
+        const logicalFrame = reverse ? 2 * frameCount - 1 - frame : frame;
+        const distance = headDistance(logicalFrame * HEAD_FRAME, headTarget, duration);
+        if (motionQuery.matches || Math.abs(distance) < HEAD_FRAME * 1.65) {
+          intro.pause();
+          if (motionQuery.matches && Math.abs(distance) >= HEAD_FRAME * 1.65) intro.currentTime = HEAD_CENTER;
+          return;
+        }
+
+        // The second half is the same footage in reverse. Align to the same image
+        // when changing direction, then let the browser's player advance normally.
+        const needsReverse = distance < 0;
+        if (reverse !== needsReverse) {
+          intro.pause();
+          intro.currentTime = (needsReverse ? 2 * frameCount - 1 - logicalFrame : logicalFrame) * HEAD_FRAME;
+          return;
+        }
+
+        const sectionEnd = reverse ? 2 * frameCount : frameCount;
+        if (frame >= sectionEnd - 2) {
+          intro.pause();
+          intro.currentTime = (reverse ? frameCount : 0) * HEAD_FRAME;
+          return;
+        }
+
+        const rate = Math.min(2.65, Math.max(.7, Math.abs(distance) * 2.2));
+        if (Math.abs(intro.playbackRate - rate) > .12) intro.playbackRate = rate;
+        if (intro.paused && !headPlayPending) {
+          headPlayPending = true;
+          intro.play().catch(() => {}).finally(() => { headPlayPending = false; });
+        }
       }
 
       function seekMain(now, targetTime) {
@@ -4537,6 +4566,7 @@ window.DY_RESUME = {
 
         document.body.dataset.scrollProgress = String(p);
         requestedMode = window.DYChapterBridges?.forceMain ? 'main' : window.DYGalleryTimeline.state.physical === 0 ? 'intro' : window.DYGalleryTimeline.state.physical >= OUTRO_START ? 'outro' : 'main';
+        if (requestedMode !== 'intro' && !intro.paused) intro.pause();
         if (requestedMode === 'outro' && !touchLayout.matches && !outro.hasAttribute('src')) {
           outro.src = outro.dataset.src;
         }
