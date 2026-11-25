@@ -3143,11 +3143,16 @@ body[data-site-chapter=contact] .header [data-chapter-label=contact] {
   position: absolute;
   z-index: 1;
   inset: 0;
-  background-position: center;
-  background-size: contain;
-  background-repeat: no-repeat;
   pointer-events: none;
   visibility: hidden;
+}
+
+.intro-poses > img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
 body[data-mode="intro"] .intro-poses[data-pose] { visibility: visible; }
@@ -3631,7 +3636,7 @@ body.is-touch-layout .player-action-row button { padding-inline: 8px; }
   </dialog>
 
   <div class="stage" aria-hidden="true">
-    <video id="intro-video" class="film is-visible" data-src="media/intro-web.mp4" poster="media/intro-fullscreen-poster.jpg" muted playsinline webkit-playsinline preload="auto" disablepictureinpicture></video>
+    <video id="intro-video" class="film is-visible" poster="media/intro-fullscreen-poster.jpg" muted playsinline webkit-playsinline preload="auto" disablepictureinpicture></video>
     <div id="intro-poses" class="intro-poses"></div>
     <video id="main-video" class="film" data-src="media/main3-linear.mp4" data-mobile-src="media/scene-art/timeline-mobile.mp4" poster="media/main3-poster.jpg" muted playsinline webkit-playsinline preload="auto" disablepictureinpicture></video>
     <video id="outro-video" class="film" data-src="media/contact3-loop.mp4" poster="media/contact3-poster.jpg" muted playsinline webkit-playsinline preload="auto" disablepictureinpicture></video>
@@ -4242,29 +4247,24 @@ window.DY_RESUME = {
       const OUTRO_START = .98;
       const SEEK_INTERVAL = 1000 / 30;
       const FPS = 60;
-      // 抽帧确认过的姿态。坐标是网页中的观看方向，不是人物自身的左右。
-      // 2026-10-18 首屏2：按新素材抽帧校准，运行时按编码实际时长缩放。
-      const HEAD_CENTER = .06;
-      const HEAD_SOURCE_DURATION = 10.08;
-      const HEAD_POSES = [
-        { key: 'right', time: 1.75 },
-        { key: 'down-right', time: 9.25 },
-        { key: 'down', time: 8.1 },
-        { key: 'down-left', time: 7.4 },
-        { key: 'left', time: 6.7 },
-        { key: 'up-left', time: 5.4 },
-        { key: 'up', time: 3.9 },
-        { key: 'up-right', time: 2.8 }
-      ];
-      // 原片的两个镜头节奏边界，按实际加载到的 duration 等比例映射。
-      if (!touchLayout.matches && !motionQuery.matches) {
-        for (const {key} of [{ key: 'center' }, ...HEAD_POSES]) {
+      // The pose names are clockwise from the viewer's right.
+      const HEAD_POSES = ['right', 'down-right', 'down', 'down-left', 'left', 'up-left', 'up', 'up-right'];
+      const HEAD_SETTLE_MS = 85;
+      const HEAD_FADE_MS = 230;
+      let headPosesRequested = false;
+
+      function loadHeadPoses() {
+        if (touchLayout.matches || motionQuery.matches || headPosesRequested) return;
+        headPosesRequested = true;
+        for (const key of ['center', ...HEAD_POSES]) {
           const frame = new Image();
-          frame.onload = () => readyHeadPoses.set(key, frame.src);
-          frame.onerror = () => { if (!intro.getAttribute('src')) intro.src = intro.dataset.src; };
+          frame.alt = '';
           frame.src = 'media/scene-art/intro-' + key + '.webp';
+          frame.decode().then(() => readyHeadPoses.set(key, frame), () => {});
         }
       }
+      loadHeadPoses();
+
       const BEAT_BOUNDARIES = [9.25 / 19.25, 16.1 / 19.25];
       let duration = 14.6;
       let durationReady = false;
@@ -4307,10 +4307,9 @@ window.DY_RESUME = {
       let pointerActive = false;
       let pointerClientX = 0, pointerClientY = 0;
       let headSector = -1;
-      let headPointerAngle = 0;
-      let headSmoothTime = HEAD_CENTER;
-      let lastHeadSeek = -Infinity;
-      let lastHeadWritten = NaN;
+      let headCandidate = -1;
+      let headCandidateSince = 0;
+      let headFade = null;
 
       for (const film of Object.values(films)) {
         film.muted = true;
@@ -4373,7 +4372,6 @@ window.DY_RESUME = {
         if (!window.DYChapterBridges?.active) main.pause();
         if (next === 'outro') playLoop(outro);
         else hideNotice('autoplay');
-        if (next === 'intro') lastHeadSeek = -Infinity;
         clearTimeout(pauseTimer);
         // 淡出完成后才暂停旧 loop；三个 DOM 视频节点不会卸载。
         pauseTimer = setTimeout(() => {
@@ -4408,8 +4406,8 @@ window.DY_RESUME = {
       function readHeadDirection() {
         if (!pointerActive || motionQuery.matches || touchLayout.matches) return -1;
         // 以完整视频中的人物头部为中心，补偿 contain 产生的居中留边。
-        const videoWidth = intro.videoWidth || 1920;
-        const videoHeight = intro.videoHeight || 1080;
+        const videoWidth = 1440;
+        const videoHeight = 810;
         const scale = Math.min(window.innerWidth / videoWidth, window.innerHeight / videoHeight);
         const headX = videoWidth * .49 * scale - (videoWidth * scale - window.innerWidth) / 2;
         const headY = videoHeight * .27 * scale - (videoHeight * scale - window.innerHeight) / 2;
@@ -4418,9 +4416,8 @@ window.DY_RESUME = {
         const x = dx / Math.max(1, dx < 0 ? headX : window.innerWidth - headX);
         const y = dy / Math.max(1, dy < 0 ? headY : window.innerHeight - headY);
         // 小范围停留保持中性，避免鼠标细微抖动导致频繁转头。
-        if (Math.hypot(x, y) < .18) return -1;
+        if (Math.hypot(x, y) < (headSector < 0 ? .20 : .14)) return -1;
         const angle = Math.atan2(y, x);
-        headPointerAngle = angle;
         const next = (Math.round(angle / (Math.PI / 4)) + 8) % 8;
         if (headSector >= 0) {
           const oldAngle = headSector * Math.PI / 4;
@@ -4430,48 +4427,49 @@ window.DY_RESUME = {
         }
         return next;
       }
-      function seekHead(now, delta) {
-        if (requestedMode !== 'intro' || touchLayout.matches) return;
-        headSector = readHeadDirection();
-        const pose = headSector < 0 ? { key: 'center', time: HEAD_CENTER } : HEAD_POSES[headSector];
-        const frame = motionQuery.matches ? null : readyHeadPoses.get(pose.key);
-        if (frame && headPoseLayer.dataset.pose !== pose.key) {
-          headPoseLayer.style.backgroundImage = 'url("' + frame + '")';
-          headPoseLayer.dataset.pose = pose.key;
+      function showHeadPose(key, sector) {
+        const frame = readyHeadPoses.get(key);
+        const previous = headPoseLayer.firstElementChild;
+        if (!frame || frame === previous || headFade) return;
+
+        function commitPose() {
+          headPoseLayer.replaceChildren(frame);
+          headPoseLayer.dataset.pose = key;
+          document.body.dataset.headDirection = key;
+          headSector = sector;
         }
-        if (motionQuery.matches) delete headPoseLayer.dataset.pose;
-        document.body.dataset.headDirection = pose.key;
-        if (frame || intro.readyState < 1 || !Number.isFinite(intro.duration)) return;
-        intro.pause();
-        let sourceTime = pose.time;
-        if (headSector >= 0) {
-          // 相邻方向连续映射。跨视频首尾取较短的循环路径，
-          // 而不是在“低头”和“右下”之间误跳到中段的抬头画面。
-          const angularPosition = ((headPointerAngle + Math.PI * 2) % (Math.PI * 2)) / (Math.PI / 4);
-          const a = Math.floor(angularPosition) % 8;
-          const b = (a + 1) % 8;
-          const blend = angularPosition - Math.floor(angularPosition);
-          let distance = HEAD_POSES[b].time - HEAD_POSES[a].time;
-          if (distance > HEAD_SOURCE_DURATION / 2) distance -= HEAD_SOURCE_DURATION;
-          if (distance < -HEAD_SOURCE_DURATION / 2) distance += HEAD_SOURCE_DURATION;
-          sourceTime = (HEAD_POSES[a].time + distance * blend + HEAD_SOURCE_DURATION) % HEAD_SOURCE_DURATION;
+
+        if (!previous) {
+          commitPose();
+          return;
         }
-        const target = Math.min(intro.duration - 1 / FPS, sourceTime * intro.duration / HEAD_SOURCE_DURATION);
-        // 相邻姿态在真实动作段内缓动；跨越不相邻片段直接定位，
-        // 防止向下看时误播一整段抬头/转身动作。
-        if (Math.abs(target - headSmoothTime) > 1.25 || motionQuery.matches) headSmoothTime = target;
-        else headSmoothTime += (target - headSmoothTime) * (1 - Math.exp(-delta / .06));
-        if (Math.abs(target - headSmoothTime) < .012) headSmoothTime = target;
-        if ((!Number.isFinite(lastHeadWritten) || Math.abs(headSmoothTime - lastHeadWritten) > .003) && now - lastHeadSeek >= SEEK_INTERVAL) {
-          try {
-            intro.currentTime = Math.max(0, headSmoothTime);
-            lastHeadWritten = headSmoothTime;
-            lastHeadSeek = now;
-          } catch (_) { lastHeadWritten = NaN; }
-        }
+
+        // Keep the previous frame opaque while the decoded frame fades over it.
+        headPoseLayer.append(frame);
+        headFade = frame.animate([{ opacity: 0 }, { opacity: 1 }], {
+          duration: HEAD_FADE_MS,
+          easing: 'ease-in-out',
+          fill: 'both'
+        });
+        headFade.onfinish = () => {
+          const finished = headFade;
+          headFade = null;
+          commitPose();
+          finished.cancel();
+        };
       }
-      intro.addEventListener('loadedmetadata', () => { lastHeadWritten = NaN; lastHeadSeek = -Infinity; });
-      intro.addEventListener('canplay', () => { lastHeadSeek = -Infinity; });
+
+      function updateHeadPose(now) {
+        if (requestedMode !== 'intro' || touchLayout.matches || motionQuery.matches) return;
+        if (!headPoseLayer.firstElementChild) showHeadPose('center', -1);
+        const next = readHeadDirection();
+        if (next !== headCandidate) {
+          headCandidate = next;
+          headCandidateSince = now;
+        }
+        if (now - headCandidateSince < HEAD_SETTLE_MS) return;
+        showHeadPose(HEAD_POSES[next] || 'center', next);
+      }
 
       function seekMain(now, targetTime) {
         if (!durationReady || main.readyState < 1) return;
@@ -4540,7 +4538,7 @@ window.DY_RESUME = {
           lastHint = hintMode;
         }
 
-        if (!window.DYChapterBridges?.active) seekHead(now, delta);
+        if (!window.DYChapterBridges?.active) updateHeadPose(now);
         frameId = requestAnimationFrame(render);
       }
       document.querySelectorAll('[data-progress]').forEach(button => {
@@ -4556,8 +4554,8 @@ window.DY_RESUME = {
         pointerClientX = event.clientX;
         pointerClientY = event.clientY;
       }, { passive: true });
-      document.documentElement.addEventListener('pointerleave', () => { pointerActive = false; headSector = -1; });
-      window.addEventListener('blur', () => { pointerActive = false; headSector = -1; });
+      document.documentElement.addEventListener('pointerleave', () => { pointerActive = false; });
+      window.addEventListener('blur', () => { pointerActive = false; });
       function retryLoop() {
         if (loops.includes(films[visibleMode])) playLoop(films[visibleMode]);
       }
@@ -4577,7 +4575,20 @@ window.DY_RESUME = {
       function refreshMotion() {
         if (motionQuery.matches) loops.forEach(film => film.pause());
         else retryLoop();
-        pointerActive = false; headSector = -1; lastHeadWritten = NaN;
+        pointerActive = false;
+        if (motionQuery.matches) {
+          if (headFade) {
+            headFade.onfinish = null;
+            headFade.cancel();
+            headFade = null;
+          }
+          headPoseLayer.replaceChildren();
+          delete headPoseLayer.dataset.pose;
+          document.body.dataset.headDirection = 'center';
+          headSector = headCandidate = -1;
+        } else {
+          loadHeadPoses();
+        }
       }
       motionQuery.addEventListener('change', refreshMotion);
       document.addEventListener('visibilitychange', () => {
@@ -4606,7 +4617,7 @@ window.DY_RESUME = {
         window.addEventListener('load', showRequestedView, { once:true });
         window.addEventListener('pageshow', () => requestAnimationFrame(showRequestedView), { once:true });
       }
-      window.addEventListener('resize', () => { lastWrittenTime = NaN; lastHeadWritten = NaN; headSector = -1; });
+      window.addEventListener('resize', () => { lastWrittenTime = NaN; });
       retryLoop();
       frameId = requestAnimationFrame(render);
     })();
