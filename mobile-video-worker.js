@@ -20,14 +20,12 @@ self.addEventListener('fetch', event => {
   if (!range) return;
 
   const start = Number(range[1]);
-  const last = start + (start === 0 ? 256 : 512) * 1024 - 1;
+  const last = start + (start === 0 ? 256 : 1024) * 1024 - 1;
   if (range[2] && Number(range[2]) <= last) return;
 
   // Return the server's real partial response. The video element owns scheduling and seeks.
-  event.respondWith(fetch(url, {
-    headers: { Range: 'bytes=' + start + '-' + last },
-    credentials: 'same-origin',
-    signal: request.signal
-  }));
+  const headers = new Headers(request.headers);
+  headers.set('Range', 'bytes=' + start + '-' + last);
+  event.respondWith(fetch(new Request(request, { headers })));
 });
 

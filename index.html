@@ -3172,7 +3172,7 @@ body.is-touch-layout #portfolio {
   grid-template-rows: auto minmax(0,1fr) auto;
   align-items: center;
   justify-items: start;
-  gap: clamp(4px,1.5dvh,13px);
+  gap: clamp(9px,1.65dvh,16px);
   padding: var(--mobile-scene-top) max(var(--gutter),env(safe-area-inset-right))
     var(--mobile-scene-bottom) max(var(--gutter),env(safe-area-inset-left));
 }
@@ -3185,7 +3185,7 @@ body.is-touch-layout #portfolio .folder-scene-heading {
 }
 
 body.is-touch-layout #portfolio .folder-scene-heading h2 {
-  font-size: clamp(32px,9vw,50px);
+  font-size: clamp(31px,9.8vw,53px);
   line-height: .98;
 }
 
@@ -3202,6 +3202,7 @@ body.is-touch-layout .folder-mobile-art {
   grid-template-rows: auto minmax(0,1fr);
   justify-items: center;
   align-items: center;
+  row-gap: 5px;
   align-self: stretch;
   width: 100%;
   min-height: 0;
@@ -3216,20 +3217,20 @@ body.is-touch-layout .folder-mobile-art {
 }
 
 .folder-mobile-art > img {
-  width: min(100%,440px);
+  width: min(100%,420px);
   height: 100%;
   min-height: 0;
   object-fit: contain;
   object-position: center;
-  mask-image: radial-gradient(ellipse 62% 65% at center,#000 61%,transparent 97%);
+  mask-image: radial-gradient(ellipse 68% 70% at center,#000 67%,transparent 100%);
 }
 
-body.is-touch-layout #folder-home { justify-self: center; }
+body.is-touch-layout #folder-home { justify-self: center; margin-block-start: 4px; }
 
 body.is-touch-layout :is(#folder-home,#folder-portal) .folder-mover {
   position: relative;
   inset: auto;
-  width: min(226px,58vw,27dvh);
+  width: min(218px,58vw,26dvh);
   transform: rotate(-4deg);
 }
 
@@ -3279,39 +3280,31 @@ body.is-touch-layout .folder-categories {
   z-index: 3;
   grid-template-columns: repeat(2,minmax(0,1fr));
   width: 100%;
-  gap: 12px;
+  gap: clamp(8px,2.5vw,13px);
 }
 
-body.is-touch-layout .folder-category {
+body.is-touch-layout .folder-dialog.is-open .folder-category {
   transform: none;
   margin: 0;
   transition: opacity .18s ease-out;
+  transition-delay: 0ms;
 }
 
-body.is-touch-layout .folder-dialog.is-open .folder-category { transition-delay: 0ms; }
 body.is-touch-layout .folder-card-description { display: none; }
 
 body.is-touch-layout #folder-portal {
-  position: relative;
-  z-index: 1;
-  display: grid;
-  justify-items: center;
-  margin-top: 18px;
-  opacity: .72;
+  display: none;
 }
-body.is-touch-layout #folder-portal .folder-mover { width: min(115px,30vw); }
-body.is-touch-layout #folder-portal .film-folder { pointer-events: none; }
-body.is-touch-layout #folder-portal .folder-front strong { font-size: 14px; }
-body.is-touch-layout #folder-portal :is(.folder-tabs,.folder-label,.folder-bottom) { visibility: hidden; }
 body.is-touch-layout .folder-key-hint { display: none; }
 
 body.is-touch-layout #resume-story .journey-horizon {
-  transform: scaleY(.44);
+  transform: scaleY(.32);
   transform-origin: center bottom;
 }
 
 body.is-touch-layout #outro-story { transition: none; }
-body.is-touch-layout #outro-story .contact-surface { gap: clamp(4px,1.1dvh,12px); }
+body.is-touch-layout #outro-story .contact-surface { gap: clamp(7px,1.15dvh,13px); }
+body.is-touch-layout #outro-story .contact-intro .site-headline { margin-bottom: 6px; }
 
 body.is-touch-layout .contact-mobile-art {
   display: block;
@@ -3320,15 +3313,17 @@ body.is-touch-layout .contact-mobile-art {
   height: 100%;
   min-width: 0;
   min-height: 0;
-  max-height: 320px;
+  max-height: 360px;
   justify-self: center;
   align-self: center;
   object-fit: contain;
-  mask-image: radial-gradient(ellipse 65% 65% at center,#000 60%,transparent 100%);
+  mask-image: radial-gradient(ellipse 72% 70% at center,#000 74%,transparent 100%);
 }
 
 body.is-touch-layout #outro-story .contact-qr-frame { width: clamp(92px,30vw,127px); }
-body.is-touch-layout .gallery-deck { touch-action: pan-y; }
+body.is-touch-layout .gallery-deck,
+body.is-touch-layout .gallery-deck .gallery-card { touch-action: pan-y; }
+body.is-touch-layout .gallery-deck { overscroll-behavior-x: contain; }
 body.is-touch-layout .player-volume,
 body.is-touch-layout .player-hint { display: none; }
 
@@ -3402,6 +3397,8 @@ body.is-touch-layout .player-hint { display: none; }
   body.is-touch-layout #outro-story .contact-receipt { grid-area: 1/2/3/3; align-self: center; }
   body.is-touch-layout .contact-mobile-art { grid-area: 2/1; }
   body.is-touch-layout .gallery-inner { padding-inline: max(var(--gutter),env(safe-area-inset-left)); }
+  body.is-touch-layout .gallery-meta { display: block; }
+  body.is-touch-layout .gallery-meta span:not(.gallery-input-hint) { display: none; }
 }
 
 @media (max-width: 355px) {
@@ -4180,7 +4177,7 @@ window.DY_RESUME = {
 'use strict';
 (() => {
   function attach(video) {
-    const { src, motionBytes, motionInit, motionOffsets, motionFrames, motionPartFrames, motionCodec } = video.dataset;
+    const { src, motionBytes, motionInit, motionOffsets, motionFrames, motionPartFrames, motionCodec, motionParts } = video.dataset;
     const codec = 'video/mp4; codecs="' + motionCodec + '"';
     if (location.protocol === 'file:' || !window.MediaSource?.isTypeSupported(codec)) {
       video.src = src;
@@ -4206,14 +4203,14 @@ window.DY_RESUME = {
       URL.revokeObjectURL(sourceURL);
     }
 
-    async function fetchBytes(start, end) {
+    async function fetchBytes(start, end, part) {
       for (let attempt = 0; attempt < 2; attempt++) {
         try {
-          const response = await fetch(src, {
+          const response = motionParts ? await fetch(motionParts + part + '.bin') : await fetch(src, {
             headers: { Range: 'bytes=' + start + '-' + end }
           });
           const range = 'bytes ' + start + '-' + end + '/' + total;
-          if (response.status !== 206 || response.headers.get('Content-Range') !== range) {
+          if (!response.ok || (!motionParts && (response.status !== 206 || response.headers.get('Content-Range') !== range))) {
             throw new Error('Unexpected intro video range');
           }
           const bytes = await response.arrayBuffer();
@@ -4234,12 +4231,13 @@ window.DY_RESUME = {
     function download() {
       if (failed) return;
       while (downloading < 5) {
-        const index = queue.size ? queue.values().next().value : background ? states.indexOf(0) : -1;
+        const index = queue.size ? queue.values().next().value
+          : background && document.body.dataset.mode === 'intro' ? states.indexOf(0) : -1;
         if (index < 0) return;
         queue.delete(index);
         states[index] = 1;
         downloading++;
-        fetchBytes(offsets[index], offsets[index + 1] - 1).then(bytes => {
+        fetchBytes(offsets[index], offsets[index + 1] - 1, index + 2).then(bytes => {
           appends.push({ index, bytes });
           appendNext();
         }, fallback).finally(() => {
@@ -4266,6 +4264,7 @@ window.DY_RESUME = {
         source.duration = frameCount / 30;
         buffer.addEventListener('error', fallback);
         buffer.addEventListener('updateend', () => {
+          if (!writing || failed) return;
           const index = writing.index;
           writing = null;
           if (index >= 0) {
@@ -4275,9 +4274,12 @@ window.DY_RESUME = {
           if (!remaining && source.readyState === 'open') source.endOfStream();
           else appendNext();
         });
-        const first = await fetchBytes(0, Number(motionInit) - 1);
+        const first = motionParts
+          ? await fetchBytes(0, offsets[1] - 1, 'start')
+          : await fetchBytes(0, Number(motionInit) - 1);
         if (failed) return;
-        appends.unshift({ index: -1, bytes: first });
+        if (motionParts) states[0] = 1;
+        appends.unshift({ index: motionParts ? 0 : -1, bytes: first });
         appendNext();
         warm(0, 2 * partFrames);
         warm(Math.floor(frameCount / 2), partFrames);
@@ -4351,7 +4353,7 @@ window.DY_RESUME = {
       const HEAD_TIMES = [1.586, 8.381, 7.339, 6.706, 6.071, 4.893, 3.534, 2.537];
       const HEAD_CENTER = 2 / 30;
       const HEAD_FRAME = 1 / 30;
-      const HEAD_SETTLE_MS = 54;
+      const HEAD_SETTLE_MS = 24;
 
       let warmHeadFrames = () => true;
       function loadHeadMotion() {
@@ -5203,7 +5205,8 @@ window.DY_CASES = [
   const mobileLayout = window.DYMobileLayout;
   const mobile = mobileLayout.matches;
   let savedMobileView = null;
-  let useOriginal = !mobile, startupTimer = 0, tryingToPlay = false;
+  const preferOriginal = !mobile && document.documentElement.dataset.videoDelivery !== 'pages';
+  let useOriginal = preferOriginal, startupTimer = 0, bufferNotice = 0, tryingToPlay = false;
   const times = new Map();
   let activeItem = null, pendingTime = 0, playerToken = 0;
   let category = '', savedScroll = null, returnFocus = null, fullReturnFocus = null;
@@ -5324,15 +5327,17 @@ window.DY_CASES = [
   }
   function stopStartupTimer() {
     clearTimeout(startupTimer);
+    clearTimeout(bufferNotice);
     startupTimer = 0;
+    bufferNotice = 0;
   }
   function watchStartup() {
     if (startupTimer || !tryingToPlay || !playerDialog.open) return;
     startupTimer = setTimeout(() => {
       startupTimer = 0;
       if (document.hidden || !activeItem || !playerDialog.open || !tryingToPlay) return;
-      setStatus(useOriginal ? '原画加载较慢，可切换流畅版。' : '视频加载较慢，请点击重试视频。', true);
-    }, 8500);
+      setStatus(useOriginal ? '原画加载较慢，可切换流畅版。' : '加载较慢，可点「重试视频」或切换原画。', true);
+    }, 6000);
   }
   function playActive() {
     tryingToPlay = true;
@@ -5352,6 +5357,7 @@ window.DY_CASES = [
     tryingToPlay = false;
     player.pause();
     qualityButton.textContent = useOriginal ? '切换流畅版' : '切换原画';
+    document.getElementById('player-description').textContent = `${activeItem.categoryLabel} · 完整成片 · ${useOriginal ? '原画' : '流畅'}`;
     const file = activeItem.full.split('/').pop();
     player.src = useOriginal ? activeItem.full : 'media/mobile/' + file;
     progress.disabled = true;
@@ -5386,7 +5392,7 @@ window.DY_CASES = [
     player.classList.toggle('is-portrait',Boolean(item.portrait));
     player.poster=item.poster;
     player.muted=false;player.defaultMuted=false;player.loop=false;player.volume=Number(volume.value);
-    useOriginal=!mobile;
+    useOriginal=preferOriginal;
     progress.max=String(item.duration);
     setVideoSource();
     document.getElementById('player-current').textContent=timeLabel(pendingTime);
@@ -5421,17 +5427,21 @@ window.DY_CASES = [
   player.addEventListener('loadedmetadata',()=>{
     if(!activeItem||!playerDialog.open)return;
     const target=Math.max(0,Math.min(pendingTime,player.duration-.08));
-    player.currentTime=target;progress.disabled=false;progress.max=String(player.duration);progress.value=String(target);
+    if (target > .05) player.currentTime=target;
+    progress.disabled=false;progress.max=String(player.duration);progress.value=String(target);
     document.getElementById('player-duration').textContent=timeLabel(player.duration);
   });
   player.addEventListener('playing',()=>{stopStartupTimer();setStatus('');playButton.textContent='暂停';});
   player.addEventListener('pause',()=>{playButton.textContent='播放';});
   player.addEventListener('waiting',()=>{
-    if(!playerDialog.open||!tryingToPlay)return;
-    setStatus('正在缓冲…');
+    if(!playerDialog.open||!tryingToPlay||scrubbing)return;
+    if(!bufferNotice) bufferNotice=setTimeout(()=>{
+      bufferNotice=0;
+      if (playerDialog.open && tryingToPlay && player.readyState < 3) setStatus('正在缓冲…');
+    },450);
     watchStartup();
   });
-  player.addEventListener('canplay',()=>{if(playerDialog.open){stopStartupTimer();setStatus('');}});
+  player.addEventListener('canplay',()=>{if(playerDialog.open&&!tryingToPlay)setStatus('');});
   player.addEventListener('error',()=>{
     if(!activeItem||!playerDialog.open||!player.error)return;
     tryingToPlay=false;
@@ -5447,7 +5457,7 @@ window.DY_CASES = [
   });
   playButton.addEventListener('click',()=>{
     if(player.paused)playActive();
-    else {tryingToPlay=false;stopStartupTimer();player.pause();}
+    else {tryingToPlay=false;stopStartupTimer();setStatus('');player.pause();}
   });
   muteButton.addEventListener('click',()=>{player.muted=!player.muted;});
   volume.addEventListener('input',()=>{player.volume=Number(volume.value);player.muted=player.volume===0;});
@@ -5457,7 +5467,7 @@ window.DY_CASES = [
     if(player.readyState>=1)player.currentTime=pendingTime;
     document.getElementById('player-current').textContent=timeLabel(pendingTime);
   });
-  function finishScrub(){if(!scrubbing)return;scrubbing=false;if(scrubWasPlaying&&playerDialog.open)player.play().catch(()=>{});}
+  function finishScrub(){if(!scrubbing)return;scrubbing=false;if(scrubWasPlaying&&playerDialog.open)playActive();}
   progress.addEventListener('change',finishScrub);progress.addEventListener('pointerup',finishScrub);progress.addEventListener('pointercancel',finishScrub);
   document.getElementById('player-retry').addEventListener('click',()=>{
     if(!activeItem)return;
@@ -5467,10 +5477,11 @@ window.DY_CASES = [
   });
   qualityButton.addEventListener('click',()=>{
     if(!activeItem)return;
-    pendingTime=player.currentTime||pendingTime;
+    const resume = tryingToPlay && !player.ended;
+    if(player.readyState>=1)pendingTime=player.currentTime;
     useOriginal=!useOriginal;
     setVideoSource();
-    playActive();
+    if(resume)playActive();
   });
   document.getElementById('player-fullscreen').addEventListener('click',()=>{
     if(document.fullscreenElement){document.exitFullscreen().catch(()=>{});return;}
@@ -6175,7 +6186,7 @@ window.DY_DESIGNS={
   deck.addEventListener('pointermove',e=>{
     if(!drag||drag.id!==e.pointerId)return;
     const x=e.clientX-drag.x,y=e.clientY-drag.y;
-    if(!drag.moved&&Math.abs(x)>12&&Math.abs(x)>Math.abs(y)*1.25){
+    if(!drag.moved&&Math.abs(x)>(mobile?8:12)&&Math.abs(x)>Math.abs(y)*1.18){
       drag.moved=true;
       deck.setPointerCapture(e.pointerId);
     }
@@ -6195,6 +6206,7 @@ window.DY_DESIGNS={
     drag=null;
   });
   deck.addEventListener('pointercancel',e=>{if(drag?.id===e.pointerId)drag=null;});
+  deck.addEventListener('lostpointercapture',e=>{if(e.target===deck&&drag?.id===e.pointerId)drag=null;});
   deck.addEventListener('dragstart',e=>e.preventDefault());
   function renderDetail(){
     const item=data.items[detailIndex],cat=data.categories.find(c=>c.id===item.category);

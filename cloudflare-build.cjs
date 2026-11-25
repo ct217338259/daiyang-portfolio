@@ -13,7 +13,7 @@ const sceneVideos = new Set([
   'media/scene-art/contact-desktop.mp4',
   'media/scene-art/contact-mobile.mp4',
 ]);
-const index = fs.readFileSync('index.html', 'utf8');
+let index = fs.readFileSync('index.html', 'utf8');
 const intro = index.match(/<video id="intro-video"[^>]+>/)[0];
 const readIntroAttribute = name => intro.match(new RegExp(name + '="([^"]+)"'))[1];
 const manifest = {};
@@ -51,6 +51,10 @@ function writeVideo(relativePath, contents) {
     ];
     const motionFolder = `${folder}/motion`;
     writeParts(motionFolder, motionOffsets, contents);
+    writeAsset(`${motionFolder}/start.bin`, contents.subarray(0, motionOffsets[3]));
+    index = index.replace('<html lang="zh-CN">', '<html lang="zh-CN" data-video-delivery="pages">');
+    index = index.replace(intro, intro.replace(' data-src=', ` data-motion-parts="${motionFolder}/" data-src=`));
+    index = index.replace('</title>', `</title>\n  <script>if(matchMedia('(pointer: fine) and (prefers-reduced-motion: no-preference)').matches && window.MediaSource){const link=document.createElement('link');link.rel='preload';link.as='fetch';link.href='${motionFolder}/start.bin';link.crossOrigin='anonymous';document.head.append(link);}</script>`);
     video.motion = { folder: motionFolder, offsets: motionOffsets };
   }
   manifest[`/${relativePath}`] = video;
@@ -78,10 +82,11 @@ function copyMedia(directory) {
   }
 }
 
-writeAsset('index.html', Buffer.from(index));
 writeAsset('mobile-video-worker.js', fs.readFileSync('mobile-video-worker.js'));
 copyMedia('media');
+writeAsset('index.html', Buffer.from(index));
 writeAsset('_video/index.json', Buffer.from(JSON.stringify(manifest)));
+writeAsset('_headers', Buffer.from('/_video/:hash/:part\n  Cache-Control: public, max-age=31536000, immutable\n\n/_video/:hash/motion/:part\n  Cache-Control: public, max-age=31536000, immutable\n'));
 writeAsset('_routes.json', Buffer.from(JSON.stringify({
   version: 1,
   include: Object.keys(manifest),

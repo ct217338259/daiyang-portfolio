@@ -13,6 +13,28 @@ function readRange(header, size) {
   return { start, end };
 }
 
+async function writePartial(body, start, length, writable) {
+  const reader = body.getReader();
+  const writer = writable.getWriter();
+  try {
+    while (length > 0) {
+      const { value, done } = await reader.read();
+      if (done) throw new Error('Video segment is incomplete');
+      if (value.byteLength <= start) {
+        start -= value.byteLength;
+        continue;
+      }
+      const available = value.subarray(start, start + length);
+      await writer.write(available);
+      length -= available.byteLength;
+      start = 0;
+    }
+  } finally {
+    writer.releaseLock();
+    await reader.cancel().catch(() => {});
+  }
+}
+
 async function writeRange(assets, url, video, range, writable) {
   try {
     const { offsets, folder } = video.motion?.offsets.includes(range.start)
@@ -28,16 +50,9 @@ async function writeRange(assets, url, video, range, writable) {
         await response.body.pipeTo(writable, { preventClose: true, preventAbort: true });
         continue;
       }
-      const bytes = new Uint8Array(await response.arrayBuffer());
-      const writer = writable.getWriter();
-      try {
-        await writer.write(bytes.subarray(
-          Math.max(range.start - offsets[i], 0),
-          range.end + 1 - offsets[i],
-        ));
-      } finally {
-        writer.releaseLock();
-      }
+      const start = Math.max(range.start, offsets[i]);
+      const end = Math.min(range.end + 1, offsets[i + 1]);
+      await writePartial(response.body, start - offsets[i], end - start, writable);
     }
     await writable.close();
   } catch (error) {
