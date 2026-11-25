@@ -3618,7 +3618,7 @@ body.is-touch-layout .player-action-row button { padding-inline: 8px; }
   </dialog>
 
   <div class="stage" aria-hidden="true">
-    <video id="intro-video" class="film is-visible" data-src="media/scene-art/intro-motion-web.mp4" data-motion-bytes="2601999" poster="media/intro-fullscreen-poster.jpg" muted playsinline webkit-playsinline preload="auto" disablepictureinpicture></video>
+    <video id="intro-video" class="film is-visible" data-src="media/scene-art/intro-motion-1080.mp4" data-motion-bytes="10085016" data-motion-init="821" data-motion-offsets="1317,298695,606005,891175,1183142,1449306,1710948,1987576,2247915,2505282,2758650,3029516,3295005,3544751,3820146,4088442,4347726,4606713,4859562,5179522,5385716,5628405,5901976,6192000,6461609,6711818,6965256,7239263,7497248,7757065,8034301,8305998,8564217,8814816,9082381,9350268,9606986,9871251,10084246" data-motion-frames="568" data-motion-part-frames="15" data-motion-codec="avc1.640028" poster="media/intro-fullscreen-poster.jpg" muted playsinline webkit-playsinline preload="auto" disablepictureinpicture></video>
     <video id="main-video" class="film" data-src="media/scene-art/timeline-desktop.mp4" data-mobile-src="media/scene-art/timeline-mobile.mp4" poster="media/main3-poster.jpg" muted playsinline webkit-playsinline preload="auto" disablepictureinpicture></video>
     <video id="outro-video" class="film" data-src="media/scene-art/contact-desktop.mp4" poster="media/contact3-poster.jpg" muted playsinline webkit-playsinline preload="auto" disablepictureinpicture></video>
     <div class="scrim"></div>
@@ -4176,6 +4176,127 @@ window.DY_RESUME = {
 })();
 
 </script>
+  <script data-source="intro-buffer.js">
+'use strict';
+(() => {
+  function attach(video) {
+    const { src, motionBytes, motionInit, motionOffsets, motionFrames, motionPartFrames, motionCodec } = video.dataset;
+    const codec = 'video/mp4; codecs="' + motionCodec + '"';
+    if (location.protocol === 'file:' || !window.MediaSource?.isTypeSupported(codec)) {
+      video.src = src;
+      return () => true;
+    }
+
+    const total = Number(motionBytes);
+    const frameCount = Number(motionFrames);
+    const partFrames = Number(motionPartFrames);
+    const offsets = motionOffsets.split(',').map(Number);
+    const states = new Uint8Array(offsets.length - 1);
+    const queue = new Set();
+    const appends = [];
+    const source = new MediaSource();
+    const sourceURL = URL.createObjectURL(source);
+    let buffer, writing, downloading = 0, remaining = states.length;
+    let background = false, failed = false;
+
+    function fallback() {
+      if (failed) return;
+      failed = true;
+      video.src = src;
+      URL.revokeObjectURL(sourceURL);
+    }
+
+    async function fetchBytes(start, end) {
+      for (let attempt = 0; attempt < 2; attempt++) {
+        try {
+          const response = await fetch(src, {
+            headers: { Range: 'bytes=' + start + '-' + end }
+          });
+          const range = 'bytes ' + start + '-' + end + '/' + total;
+          if (response.status !== 206 || response.headers.get('Content-Range') !== range) {
+            throw new Error('Unexpected intro video range');
+          }
+          const bytes = await response.arrayBuffer();
+          if (bytes.byteLength !== end - start + 1) throw new Error('Incomplete intro video range');
+          return bytes;
+        } catch (error) {
+          if (attempt === 1) throw error;
+        }
+      }
+    }
+
+    function appendNext() {
+      if (failed || !buffer || writing || buffer.updating || !appends.length) return;
+      writing = appends.shift();
+      try { buffer.appendBuffer(writing.bytes); } catch (_) { fallback(); }
+    }
+
+    function download() {
+      if (failed) return;
+      while (downloading < 5) {
+        const index = queue.size ? queue.values().next().value : background ? states.indexOf(0) : -1;
+        if (index < 0) return;
+        queue.delete(index);
+        states[index] = 1;
+        downloading++;
+        fetchBytes(offsets[index], offsets[index + 1] - 1).then(bytes => {
+          appends.push({ index, bytes });
+          appendNext();
+        }, fallback).finally(() => {
+          downloading--;
+          download();
+        });
+      }
+    }
+
+    function warm(frame, ahead = 0) {
+      if (failed) return true;
+      const first = Math.floor(Math.max(0, frame) / partFrames);
+      const last = Math.min(states.length - 1, Math.floor((frame + ahead) / partFrames));
+      for (let index = first; index <= last; index++) {
+        if (states[index] === 0) queue.add(index);
+      }
+      download();
+      return states[first] === 2;
+    }
+
+    source.addEventListener('sourceopen', async () => {
+      try {
+        buffer = source.addSourceBuffer(codec);
+        source.duration = frameCount / 30;
+        buffer.addEventListener('error', fallback);
+        buffer.addEventListener('updateend', () => {
+          const index = writing.index;
+          writing = null;
+          if (index >= 0) {
+            states[index] = 2;
+            remaining--;
+          }
+          if (!remaining && source.readyState === 'open') source.endOfStream();
+          else appendNext();
+        });
+        const first = await fetchBytes(0, Number(motionInit) - 1);
+        if (failed) return;
+        appends.unshift({ index: -1, bytes: first });
+        appendNext();
+        warm(0, 2 * partFrames);
+        warm(Math.floor(frameCount / 2), partFrames);
+      } catch (_) {
+        fallback();
+      }
+    }, { once: true });
+    video.addEventListener('loadeddata', () => {
+      setTimeout(() => { background = true; download(); }, 350);
+    }, { once: true });
+    video.src = sourceURL;
+    return warm;
+  }
+
+  window.DYIntroBuffer = { attach };
+})();
+
+
+</script>
   <script>
     'use strict';
     (() => {
@@ -4230,50 +4351,13 @@ window.DY_RESUME = {
       const HEAD_TIMES = [1.586, 8.381, 7.339, 6.706, 6.071, 4.893, 3.534, 2.537];
       const HEAD_CENTER = 2 / 30;
       const HEAD_FRAME = 1 / 30;
-      const HEAD_SETTLE_MS = 80;
+      const HEAD_SETTLE_MS = 54;
 
-      // Read the small motion asset into memory so cursor seeks never wait for another request.
-      async function fetchHeadMotion(src, length) {
-        const chunkSize = 768 * 1024;
-        if (!length) return src;
-        const chunks = new Array(Math.ceil(length / chunkSize));
-        let nextChunk = 0;
-        async function loadChunk() {
-          while (nextChunk < chunks.length) {
-            const index = nextChunk++;
-            const start = index * chunkSize;
-            const end = Math.min(length, start + chunkSize) - 1;
-            for (let attempt = 0; attempt < 2; attempt++) {
-              try {
-                const response = await fetch(src, { headers: { Range: 'bytes=' + start + '-' + end } });
-                const expectedRange = 'bytes ' + start + '-' + end + '/' + length;
-                if (response.status !== 206 || response.headers.get('Content-Range') !== expectedRange) {
-                  throw new Error('Unexpected video range');
-                }
-                const bytes = await response.arrayBuffer();
-                if (bytes.byteLength !== end - start + 1) throw new Error('Incomplete video range');
-                chunks[index] = bytes;
-                break;
-              } catch (error) {
-                if (attempt === 1) throw error;
-              }
-            }
-          }
-        }
-        await Promise.all(Array.from({ length: Math.min(6, chunks.length) }, loadChunk));
-        return URL.createObjectURL(new Blob(chunks, { type: 'video/mp4' }));
-      }
-
-      let headSource;
+      let warmHeadFrames = () => true;
       function loadHeadMotion() {
-        if (touchLayout.matches || motionQuery.matches || intro.hasAttribute('src')) return;
-        if (!headSource) {
-          const src = intro.dataset.src;
-          headSource = location.protocol === 'file:' ? Promise.resolve(src) : fetchHeadMotion(src, Number(intro.dataset.motionBytes)).catch(() => src);
+        if (!touchLayout.matches && !motionQuery.matches && !intro.hasAttribute('src')) {
+          warmHeadFrames = window.DYIntroBuffer.attach(intro);
         }
-        headSource.then(src => {
-          if (!motionQuery.matches && !intro.hasAttribute('src')) intro.src = src;
-        });
       }
       loadHeadMotion();
 
@@ -4325,6 +4409,7 @@ window.DY_RESUME = {
       let headTarget = HEAD_CENTER;
       let headPresented = NaN;
       let headPlayPending = false;
+      intro.addEventListener('loadstart', () => { headPresented = NaN; });
       intro.addEventListener('seeked', () => { headPresented = intro.currentTime; });
       if (typeof intro.requestVideoFrameCallback === 'function') {
         const recordHeadFrame = (_now, metadata) => {
@@ -4494,18 +4579,22 @@ window.DY_RESUME = {
         const needsReverse = distance < 0;
         if (reverse !== needsReverse) {
           intro.pause();
-          intro.currentTime = (needsReverse ? 2 * frameCount - 1 - logicalFrame : logicalFrame) * HEAD_FRAME;
+          const mirror = needsReverse ? 2 * frameCount - 1 - logicalFrame : logicalFrame;
+          const destination = needsReverse && logicalFrame < 2 ? frameCount : mirror;
+          if (warmHeadFrames(destination, 42)) intro.currentTime = destination * HEAD_FRAME;
           return;
         }
 
         const sectionEnd = reverse ? 2 * frameCount : frameCount;
         if (frame >= sectionEnd - 2) {
           intro.pause();
-          intro.currentTime = (reverse ? frameCount : 0) * HEAD_FRAME;
+          const destination = reverse ? frameCount : 0;
+          if (warmHeadFrames(destination, 42)) intro.currentTime = destination * HEAD_FRAME;
           return;
         }
 
-        const rate = Math.min(2.65, Math.max(.7, Math.abs(distance) * 2.2));
+        warmHeadFrames(frame, 52);
+        const rate = Math.min(3.05, Math.max(.85, Math.abs(distance) * 2.4));
         if (Math.abs(intro.playbackRate - rate) > .12) intro.playbackRate = rate;
         if (intro.paused && !headPlayPending) {
           headPlayPending = true;
