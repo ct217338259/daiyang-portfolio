@@ -4,7 +4,7 @@ const { createHash } = require('node:crypto');
 
 const output = path.resolve(process.argv[2] || 'dist');
 const maxAssetBytes = 25 * 1024 * 1024;
-const videoPartBytes = 2 * 1024 * 1024;
+const videoPartBytes = 4 * 1024 * 1024;
 const introPath = 'media/scene-art/intro-motion-1080.mp4';
 const sceneVideos = new Set([
   introPath,
@@ -32,27 +32,37 @@ function writeVideo(relativePath, contents) {
   const hash = createHash('sha256').update(contents).digest('hex');
   const folder = `_video/${hash}`;
   const offsets = [0];
+  for (let start = videoPartBytes; start < size; start += videoPartBytes) {
+    offsets.push(start);
+  }
+  offsets.push(size);
+  const video = { folder, size, offsets, etag: `"${hash}"` };
+  writeParts(folder, offsets, contents);
 
   if (relativePath === introPath) {
     if (size !== Number(readIntroAttribute('data-motion-bytes'))) {
       throw new Error('Intro video and its byte offsets are out of sync');
     }
-    offsets.push(Number(readIntroAttribute('data-motion-init')));
-    offsets.push(...readIntroAttribute('data-motion-offsets').split(',').map(Number));
-  } else {
-    for (let start = videoPartBytes; start < size; start += videoPartBytes) {
-      offsets.push(start);
-    }
+    const motionOffsets = [
+      0,
+      Number(readIntroAttribute('data-motion-init')),
+      ...readIntroAttribute('data-motion-offsets').split(',').map(Number),
+      size,
+    ];
+    const motionFolder = `${folder}/motion`;
+    writeParts(motionFolder, motionOffsets, contents);
+    video.motion = { folder: motionFolder, offsets: motionOffsets };
   }
-  offsets.push(size);
+  manifest[`/${relativePath}`] = video;
+}
 
+function writeParts(folder, offsets, contents) {
   for (let i = 0; i < offsets.length - 1; i++) {
     if (!Number.isSafeInteger(offsets[i]) || offsets[i] >= offsets[i + 1]) {
-      throw new Error(`Invalid video offsets: ${relativePath}`);
+      throw new Error(`Invalid video offsets: ${folder}`);
     }
     writeAsset(`${folder}/${i}.bin`, contents.subarray(offsets[i], offsets[i + 1]));
   }
-  manifest[`/${relativePath}`] = { folder, size, offsets, etag: `"${hash}"` };
 }
 
 function copyMedia(directory) {

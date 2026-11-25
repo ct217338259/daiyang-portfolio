@@ -14,22 +14,34 @@ function readRange(header, size) {
 }
 
 async function writeRange(assets, url, video, range, writable) {
-  const writer = writable.getWriter();
   try {
-    const { offsets, folder } = video;
+    const { offsets, folder } = video.motion?.offsets.includes(range.start)
+      && video.motion.offsets.includes(range.end + 1)
+      && range.end - range.start + 1 < 1024 * 1024
+      ? video.motion
+      : video;
     for (let i = 0; i < offsets.length - 1 && offsets[i] <= range.end; i++) {
       if (offsets[i + 1] <= range.start) continue;
       const response = await assets.fetch(new URL(`/${folder}/${i}.bin`, url));
-      if (!response.ok) throw new Error('Video segment unavailable');
+      if (!response.ok || !response.body) throw new Error('Video segment unavailable');
+      if (range.start <= offsets[i] && range.end >= offsets[i + 1] - 1) {
+        await response.body.pipeTo(writable, { preventClose: true, preventAbort: true });
+        continue;
+      }
       const bytes = new Uint8Array(await response.arrayBuffer());
-      await writer.write(bytes.subarray(
-        Math.max(range.start - offsets[i], 0),
-        range.end + 1 - offsets[i],
-      ));
+      const writer = writable.getWriter();
+      try {
+        await writer.write(bytes.subarray(
+          Math.max(range.start - offsets[i], 0),
+          range.end + 1 - offsets[i],
+        ));
+      } finally {
+        writer.releaseLock();
+      }
     }
-    await writer.close();
+    await writable.close();
   } catch (error) {
-    await writer.abort(error);
+    await writable.abort(error);
   }
 }
 
