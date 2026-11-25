@@ -4877,14 +4877,15 @@ window.DY_PORTFOLIO = {
       "category": "realistic",
       "categoryLabel": "仿真人",
       "title": "东航宣传片视频",
-      "duration": 113.99000000000001,
+      "duration": 113.99,
       "hasAudio": true,
-      "preview": "media/works/realistic-02-preview.mp4",
-      "full": "https://github.com/ct217338259/daiyang-portfolio/releases/download/videos-v1/realistic-02.mp4",
+      "preview": "media/works/realistic-02-preview.mp4?v=2",
+      "full": "media/mobile/realistic-02.mp4?v=2",
       "poster": "media/work-covers/realistic-02.png",
       "portrait": false,
-      "fullBytes": 91184172,
-      "previewBytes": 5099143,
+      "fullBytes": 23555009,
+      "previewBytes": 850152,
+      "shotVersion": 2,
       "previewStart": 3,
       "localPlayback": true
     },
@@ -4893,14 +4894,15 @@ window.DY_PORTFOLIO = {
       "category": "realistic",
       "categoryLabel": "仿真人",
       "title": "婚礼先导片",
-      "duration": 130.8,
+      "duration": 127.34,
       "hasAudio": true,
-      "preview": "media/works/realistic-03-preview.mp4",
-      "full": "https://github.com/ct217338259/daiyang-portfolio/releases/download/videos-v1/realistic-03.mp4",
+      "preview": "media/works/realistic-03-preview.mp4?v=2",
+      "full": "media/mobile/realistic-03.mp4?v=2",
       "poster": "media/work-covers/realistic-03.jpg",
       "portrait": false,
-      "fullBytes": 127546713,
-      "previewBytes": 5882386,
+      "fullBytes": 20196867,
+      "previewBytes": 1259390,
+      "shotVersion": 2,
       "previewStart": 3,
       "localPlayback": true
     },
@@ -5214,6 +5216,7 @@ window.DY_CASES = [
   const timeLabel = seconds => `${String(Math.floor(Math.max(0,seconds)/60)).padStart(2,'0')}:${String(Math.floor(Math.max(0,seconds)%60)).padStart(2,'0')}`;
   const escape = value => String(value).replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
   function canPlay(item) { return !window.DY_SHELL_ONLY || item?.localPlayback===true; }
+  function hasQualityChoice(item) { return !item.full.startsWith('media/mobile/'); }
   let hoverPreview=null;
   function stopHoverPreview(button) {
     if(!hoverPreview||(button&&hoverPreview.button!==button))return;
@@ -5336,7 +5339,9 @@ window.DY_CASES = [
     startupTimer = setTimeout(() => {
       startupTimer = 0;
       if (document.hidden || !activeItem || !playerDialog.open || !tryingToPlay) return;
-      setStatus(useOriginal ? '原画加载较慢，可切换流畅版。' : '加载较慢，可点「重试视频」或切换原画。', true);
+      const message = !hasQualityChoice(activeItem) ? '加载较慢，可点「重试视频」。'
+        : useOriginal ? '原画加载较慢，可切换流畅版。' : '加载较慢，可点「重试视频」或切换原画。';
+      setStatus(message, true);
     }, 6000);
   }
   function playActive() {
@@ -5356,10 +5361,13 @@ window.DY_CASES = [
     stopStartupTimer();
     tryingToPlay = false;
     player.pause();
+    const hasAlternate = hasQualityChoice(activeItem);
+    qualityButton.hidden = !hasAlternate;
     qualityButton.textContent = useOriginal ? '切换流畅版' : '切换原画';
-    document.getElementById('player-description').textContent = `${activeItem.categoryLabel} · 完整成片 · ${useOriginal ? '原画' : '流畅'}`;
+    const qualityLabel = hasAlternate ? (useOriginal ? ' · 原画' : ' · 流畅') : '';
+    document.getElementById('player-description').textContent = `${activeItem.categoryLabel} · 完整成片${qualityLabel}`;
     const file = activeItem.full.split('/').pop();
-    player.src = useOriginal ? activeItem.full : 'media/mobile/' + file;
+    player.src = !hasAlternate || useOriginal ? activeItem.full : 'media/mobile/' + file;
     progress.disabled = true;
     progress.value = String(pendingTime);
     playButton.textContent = '播放';
@@ -5392,7 +5400,7 @@ window.DY_CASES = [
     player.classList.toggle('is-portrait',Boolean(item.portrait));
     player.poster=item.poster;
     player.muted=false;player.defaultMuted=false;player.loop=false;player.volume=Number(volume.value);
-    useOriginal=preferOriginal;
+    useOriginal=hasQualityChoice(item) && preferOriginal;
     progress.max=String(item.duration);
     setVideoSource();
     document.getElementById('player-current').textContent=timeLabel(pendingTime);
@@ -5446,7 +5454,9 @@ window.DY_CASES = [
     if(!activeItem||!playerDialog.open||!player.error)return;
     tryingToPlay=false;
     stopStartupTimer();
-    setStatus(useOriginal ? '原画无法加载，可切换流畅版。' : '视频无法加载，可重试或切换原画。',true);
+    const message = !hasQualityChoice(activeItem) ? '视频无法加载，请点击重试视频。'
+      : useOriginal ? '原画无法加载，可切换流畅版。' : '视频无法加载，可重试或切换原画。';
+    setStatus(message,true);
   });
   player.addEventListener('volumechange',()=>{muteButton.textContent=player.muted||player.volume===0?'开启声音':'静音';muteButton.setAttribute('aria-pressed',String(player.muted));});
   player.addEventListener('timeupdate',()=>{
@@ -5476,7 +5486,7 @@ window.DY_CASES = [
     playActive();
   });
   qualityButton.addEventListener('click',()=>{
-    if(!activeItem)return;
+    if(!activeItem||!hasQualityChoice(activeItem))return;
     const resume = tryingToPlay && !player.ended;
     if(player.readyState>=1)pendingTime=player.currentTime;
     useOriginal=!useOriginal;
@@ -6306,7 +6316,8 @@ window.DY_DESIGNS={
   };
   window.DY_FILM_BOARDS=Object.fromEntries(window.DY_PORTFOLIO.items.map(item=>{
     const project=window.DY_CASES.find(c=>c.workId===item.id),c=copy[item.id];
-    const shots=project?project.shots:[.18,.5,.8].map((p,i)=>({title:['起段画面','中段画面','收束画面'][i],time:Number((item.duration*p).toFixed(2)),image:`media/film-boards/${item.id}-${i+1}.jpg`}));
+    const shotSuffix=item.shotVersion?`?v=${item.shotVersion}`:'';
+    const shots=project?project.shots:[.18,.5,.8].map((p,i)=>({title:['起段画面','中段画面','收束画面'][i],time:Number((item.duration*p).toFixed(2)),image:`media/film-boards/${item.id}-${i+1}.jpg${shotSuffix}`}));
     return [item.id,{line:c[0],summary:c[1],focus:c[2],method:c[3],project,shots,outcome:outcomes[item.id]}];
   }));
 })();
