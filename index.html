@@ -3,6 +3,7 @@
 <head>
   <script>window.DY_SHELL_ONLY = true;</script>
   <meta charset="UTF-8">
+  <link rel="preload" as="image" href="media/intro-fullscreen-poster.jpg" fetchpriority="high">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#171b1e">
   <meta name="description" content="代阳的 AIGC 视频与视觉作品集。探索动漫、仿真人、互动视频与实拍合成，静音预览、有声观看，并体验可玩作品。">
@@ -3617,9 +3618,9 @@ body.is-touch-layout .player-action-row button { padding-inline: 8px; }
   </dialog>
 
   <div class="stage" aria-hidden="true">
-    <video id="intro-video" class="film is-visible" data-src="media/scene-art/intro-pointer.mp4" poster="media/intro-fullscreen-poster.jpg" muted playsinline webkit-playsinline preload="auto" disablepictureinpicture></video>
-    <video id="main-video" class="film" data-src="media/main3-linear.mp4" data-mobile-src="media/scene-art/timeline-mobile.mp4" poster="media/main3-poster.jpg" muted playsinline webkit-playsinline preload="auto" disablepictureinpicture></video>
-    <video id="outro-video" class="film" data-src="media/contact3-loop.mp4" poster="media/contact3-poster.jpg" muted playsinline webkit-playsinline preload="auto" disablepictureinpicture></video>
+    <video id="intro-video" class="film is-visible" data-src="media/scene-art/intro-pointer-lite.mp4" poster="media/intro-fullscreen-poster.jpg" muted playsinline webkit-playsinline preload="auto" disablepictureinpicture></video>
+    <video id="main-video" class="film" data-src="media/scene-art/timeline-desktop.mp4" data-mobile-src="media/scene-art/timeline-mobile.mp4" poster="media/main3-poster.jpg" muted playsinline webkit-playsinline preload="auto" disablepictureinpicture></video>
+    <video id="outro-video" class="film" data-src="media/scene-art/contact-desktop.mp4" poster="media/contact3-poster.jpg" muted playsinline webkit-playsinline preload="auto" disablepictureinpicture></video>
     <div class="scrim"></div>
   </div>
 
@@ -4130,11 +4131,6 @@ window.DY_RESUME = {
     contact.play().catch(() => {});
   }
 
-  function prepareMedia(main, outro) {
-    main.src = matches ? main.dataset.mobileSrc : main.dataset.src;
-    if (!matches) outro.src = outro.dataset.src;
-  }
-
   function clearHint() {
     clearTimeout(hintTimer);
     hint.hidden = true;
@@ -4176,7 +4172,7 @@ window.DY_RESUME = {
     }
   });
 
-  window.DYMobileLayout = { matches, prepareMedia, updateContact, orientation, positionForTime };
+  window.DYMobileLayout = { matches, updateContact, orientation, positionForTime };
 })();
 
 </script>
@@ -4210,7 +4206,13 @@ window.DY_RESUME = {
       const main = document.getElementById('main-video');
       const outro = document.getElementById('outro-video');
       const touchLayout = window.DYMobileLayout;
-      touchLayout.prepareMedia(main, outro);
+      function loadTimeline() {
+        if (!main.hasAttribute('src')) {
+          main.src = touchLayout.matches ? main.dataset.mobileSrc : main.dataset.src;
+        }
+      }
+      if (touchLayout.matches) loadTimeline();
+      else intro.addEventListener('loadeddata', () => setTimeout(loadTimeline, 1000), { once: true });
       const films = { intro, main, outro };
       const loops = touchLayout.matches ? [] : [outro];
       const progressLine = document.getElementById('progress-line');
@@ -4232,7 +4234,7 @@ window.DY_RESUME = {
 
       // Read the small motion asset into memory so cursor seeks never wait for another request.
       async function fetchHeadMotion(src) {
-        const chunkSize = 256 * 1024;
+        const chunkSize = 640 * 1024;
         const header = await fetch(src, { method: 'HEAD' });
         const length = Number(header.headers.get('Content-Length'));
         if (!header.ok || !length) return src;
@@ -4246,7 +4248,10 @@ window.DY_RESUME = {
             for (let attempt = 0; attempt < 2; attempt++) {
               try {
                 const response = await fetch(src, { headers: { Range: 'bytes=' + start + '-' + end } });
-                if (response.status !== 206) throw new Error('Expected a video range');
+                const expectedRange = 'bytes ' + start + '-' + end + '/' + length;
+                if (response.status !== 206 || response.headers.get('Content-Range') !== expectedRange) {
+                  throw new Error('Unexpected video range');
+                }
                 const bytes = await response.arrayBuffer();
                 if (bytes.byteLength !== end - start + 1) throw new Error('Incomplete video range');
                 chunks[index] = bytes;
@@ -4307,6 +4312,7 @@ window.DY_RESUME = {
       });
       window.DYVideoSync = Object.freeze({snapshot:()=>({presentedTime:presentedMainTime,hasFrame:mainFrameReady,writes:mainSeekWrites,seeking:main.seeking})});
       let lastFrame = 0;
+      let settledIntro = false;
       let frameId = 0;
       let pauseTimer = 0;
       let lastBeat = -2;
@@ -4508,9 +4514,17 @@ window.DY_RESUME = {
         window.DYChapterBridges?.update(now);
         if (window.DYChapterBridges?.consumeCompletion()) { smoothTime=main.currentTime;lastWrittenTime=NaN;lastSeek=-Infinity; }
         if (loops.includes(films[visibleMode]) && films[visibleMode].paused) playLoop(films[visibleMode]);
+        if (settledIntro && window.scrollY === 0 && !window.DYChapterBridges?.active) {
+          lastFrame = now;
+          window.DYTextMotion?.update(0, now);
+          updateHeadMotion(now);
+          frameId = requestAnimationFrame(render);
+          return;
+        }
         const delta = Math.min(.05, lastFrame ? (now - lastFrame) / 1000 : 1 / 60);
         lastFrame = now;
         const p = readProgress();
+        if (p > 0 && window.DYGalleryTimeline.state.physical < OUTRO_START) loadTimeline();
         const targetTime = window.DYGalleryTimeline.mediaProgress(p) * duration;
         if(window.DYGalleryTimeline.consumeCut()){
           smoothTime=targetTime;lastWrittenTime=NaN;lastSeek=-Infinity;
@@ -4523,11 +4537,14 @@ window.DY_RESUME = {
 
         document.body.dataset.scrollProgress = String(p);
         requestedMode = window.DYChapterBridges?.forceMain ? 'main' : window.DYGalleryTimeline.state.physical === 0 ? 'intro' : window.DYGalleryTimeline.state.physical >= OUTRO_START ? 'outro' : 'main';
-        // 首次主视频解码完成前保留当前画面，避免加载期间出现白屏。
-        const nextReady = requestedMode === 'main'
-          ? mainFrameReady && (visibleMode === 'main' || Math.abs(presentedMainTime - targetTime) < .12)
-          : requestedMode === 'intro' || touchLayout.matches || films[requestedMode].readyState >= 2;
+        if (requestedMode === 'outro' && !touchLayout.matches && !outro.hasAttribute('src')) {
+          outro.src = outro.dataset.src;
+        }
+        // The outro can display its poster immediately while its loop buffers.
+        const nextReady = requestedMode !== 'main' ||
+          (mainFrameReady && (visibleMode === 'main' || Math.abs(presentedMainTime - targetTime) < .12));
         if (nextReady) changeVisibleMode(requestedMode);
+        settledIntro = p === 0 && visibleMode === 'intro' && requestedMode === 'intro';
         // Work scenes use the displayed video time, not a separate page section.
         const visualP = window.DYGalleryTimeline.sceneProgress(touchLayout.matches ? targetTime / duration : durationReady ? presentedMainTime / duration : 0,p,window.DYChapterBridges?.galleryMix);
         touchLayout.updateContact(requestedMode === 'outro');
@@ -4614,7 +4631,7 @@ window.DY_RESUME = {
         window.addEventListener('load', showRequestedView, { once:true });
         window.addEventListener('pageshow', () => requestAnimationFrame(showRequestedView), { once:true });
       }
-      window.addEventListener('resize', () => { lastWrittenTime = NaN; });
+      window.addEventListener('resize', () => { lastWrittenTime = NaN; settledIntro = false; });
       retryLoop();
       frameId = requestAnimationFrame(render);
     })();
@@ -5725,7 +5742,7 @@ window.DY_CASES = [
     button.type='button';button.className='folder-category';button.dataset.folderCategory=entry.id;
     button.style.setProperty('--card-order',index);button.style.setProperty('--card-angle',`${[-5,-1,2,5][index]}deg`);
     button.setAttribute('aria-label',`${entry.title}，${count} 部视频${entry.id==='interactive'?'及可玩游戏':''}`);
-    const img=document.createElement('img');img.src=item.poster;img.alt='';img.width=720;img.height=720;
+    const img=document.createElement('img');img.dataset.cover=item.poster;img.alt='';img.decoding='async';img.width=720;img.height=720;
     const picture=document.createElement('span');picture.className='folder-card-picture';picture.append(img);
     const caption=document.createElement('span');caption.className='folder-card-caption';
     const title=document.createElement('strong');title.textContent=entry.title;
@@ -5852,6 +5869,7 @@ window.DY_CASES = [
   }
   function openFolder() {
     if(dialog.open||closing)return;
+    categoryGrid.querySelectorAll('img[data-cover]:not([src])').forEach(img=>{img.src=img.dataset.cover;});
     const origin=mover.getBoundingClientRect();
     folderOrigin={x:(origin.left+origin.right)/2,y:(origin.top+origin.bottom)/2,width:mover.offsetWidth*(parseFloat(mover.style.getPropertyValue('--folder-scale'))||1),rotation:mover.style.getPropertyValue('--folder-rotation')||'-5deg'};
     mover.style.transition='none';
@@ -5963,7 +5981,7 @@ window.DY_DESIGNS={
   });
   const cards=data.items.map((item,i)=>{
     const b=document.createElement('button');b.type='button';b.className='gallery-card'+(item.ratio<1?' is-portrait':'');b.dataset.design=item.id;b.setAttribute('aria-label',`${item.title}，查看作品详情`);
-    b.innerHTML=`<img src="${esc(item.preview||`media/designs/${item.id}-preview.webp`)}" draggable="false" alt="${esc(item.title)}完整设计图" decoding="async" ${i>1?'loading="lazy"':''}><span class="gallery-card-caption"><strong>${esc(item.title)}</strong><span>VIEW / 查看 ↗</span></span>`;
+    b.innerHTML=`<img data-preview="${esc(item.preview||`media/designs/${item.id}-preview.webp`)}" draggable="false" alt="${esc(item.title)}完整设计图" decoding="async"><span class="gallery-card-caption"><strong>${esc(item.title)}</strong><span>VIEW / 查看 ↗</span></span>`;
     b.addEventListener('click',()=>{if(performance.now()-(deck._dragEnd||0)<250)return;open(i);});deck.append(b);return b;
   });
   const clampIndex=index=>Math.max(0,Math.min(cards.length-1,index));
@@ -5982,7 +6000,11 @@ window.DY_DESIGNS={
   document.getElementById('gallery-prev').addEventListener('click',()=>go(current-1));
   document.getElementById('gallery-next').addEventListener('click',()=>go(current+1));
   document.getElementById('gallery-leave').addEventListener('click',()=>scrollTo({top:timeline.position(1),behavior:reduce.matches?'instant':'smooth'}));
+  let paintedPosition, paintedWidth, paintedHeight;
   function paint(){
+    const width=innerWidth,height=innerHeight;
+    if(position===paintedPosition&&width===paintedWidth&&height===paintedHeight)return;
+    paintedPosition=position;paintedWidth=width;paintedHeight=height;
     const captionHeight=cards[0].querySelector('.gallery-card-caption').offsetHeight;
     const ratio=data.items[current]?.ratio||1672/941;
     const cardWidth=Math.max(40,Math.min(innerWidth*(innerWidth<600?.84:.65),(deck.clientHeight-captionHeight-24)*ratio,1200));
@@ -5998,6 +6020,10 @@ window.DY_DESIGNS={
     document.getElementById('gallery-prev').disabled=current===0;document.getElementById('gallery-next').disabled=current===13;
     cards.forEach((card,i)=>{
       const d=i-position,abs=Math.abs(d),near=abs<2.5;
+      if(abs<3.5){
+        const img=card.querySelector('img');
+        if(!img.hasAttribute('src'))img.src=img.dataset.preview;
+      }
       // One ordered rail: neighboring works remain visible across category boundaries.
       card.style.visibility=near?'visible':'hidden';card.style.opacity=near?String(Math.max(0,Math.min(1,(2.5-abs)*.8))):'0';
       card.style.transform=`translate(-50%,-50%) translateX(${d*(innerWidth<600?76:67)}%) translateZ(${-Math.min(abs,3)*100}px) rotateY(${-Math.max(-3,Math.min(3,d))*4}deg) scale(${1-Math.min(abs,3)*.085})`;
@@ -6008,7 +6034,7 @@ window.DY_DESIGNS={
   function update(now=performance.now()){
     if(document.body.dataset.overlay)return;
     const state=timeline.state,next=state.active;
-    if(next!==active){if(next&&(state.galleryReveal??1)<1)position=0;active=next;root.classList.toggle('is-active',active);lastTime=now;}
+    if(next!==active){if(next&&(state.galleryReveal??1)<1)position=0;paintedPosition=undefined;active=next;root.classList.toggle('is-active',active);lastTime=now;}
     const reveal=state.galleryReveal??1,backing=state.galleryBacking??reveal,interactive=active&&!state.crossfading&&reveal>=.55;
     root.style.setProperty('--gallery-reveal',String(backing));
     root.style.setProperty('--gallery-content-reveal',String(backing>0?reveal/backing:0));
