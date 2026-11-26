@@ -54,7 +54,7 @@ function writeVideo(relativePath, contents) {
     writeAsset(`${motionFolder}/start.bin`, contents.subarray(0, motionOffsets[3]));
     index = index.replace('<html lang="zh-CN">', '<html lang="zh-CN" data-video-delivery="pages">');
     index = index.replace(intro, intro.replace(' data-src=', ` data-motion-parts="${motionFolder}/" data-src=`));
-    index = index.replace('</title>', `</title>\n  <script>if(matchMedia('(pointer: fine) and (prefers-reduced-motion: no-preference)').matches && window.MediaSource){const link=document.createElement('link');link.rel='preload';link.as='fetch';link.href='${motionFolder}/start.bin';link.crossOrigin='anonymous';document.head.append(link);}</script>`);
+    index = index.replace('</title>', `</title>\n  <script>if(!window.DYMobileMedia.matches && matchMedia('(pointer: fine) and (prefers-reduced-motion: no-preference)').matches && window.MediaSource){const link=document.createElement('link');link.rel='preload';link.as='fetch';link.href='${motionFolder}/start.bin';link.crossOrigin='anonymous';document.head.append(link);}</script>`);
     video.motion = { folder: motionFolder, offsets: motionOffsets };
   }
   manifest[`/${relativePath}`] = video;

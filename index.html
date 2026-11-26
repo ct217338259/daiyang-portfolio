@@ -3,8 +3,17 @@
 <head>
   <script>window.DY_SHELL_ONLY = true;</script>
   <meta charset="UTF-8">
-  <link rel="preload" as="image" href="media/intro-fullscreen-poster.jpg" fetchpriority="high">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <script>
+    window.DYMobileMedia = matchMedia('(pointer: coarse) and (max-width: 1024px), (pointer: coarse) and (max-height: 540px), (max-width: 700px)');
+    window.DYIntroPoster = DYMobileMedia.matches ? 'media/scene-art/intro-mobile-poster.webp' : 'media/intro-fullscreen-poster.jpg';
+    const introPreload = document.createElement('link');
+    introPreload.rel = 'preload';
+    introPreload.as = 'image';
+    introPreload.href = DYIntroPoster;
+    introPreload.fetchPriority = 'high';
+    document.head.append(introPreload);
+  </script>
   <meta name="theme-color" content="#171b1e">
   <meta name="description" content="代阳的 AIGC 视频与视觉作品集。探索动漫、仿真人、互动视频与实拍合成，静音预览、有声观看，并体验可玩作品。">
   <title>代阳 Dai Yang · AIGC 视频与视觉作品集</title>
@@ -3512,7 +3521,7 @@ body.is-touch-layout .player-action-row :is(button,.player-original) { padding-i
 
     <section class="story" id="outro-story" aria-label="第五章，求职与联系" aria-hidden="true" inert>
       <div class="chapter-surface contact-surface">
-        <video class="contact-mobile-art" id="contact-mobile-art" poster="media/scene-art/contact-mobile.webp" data-src="media/scene-art/contact-mobile.mp4" muted playsinline webkit-playsinline loop preload="none" aria-hidden="true"></video>
+        <video class="contact-mobile-art" id="contact-mobile-art" data-poster="media/scene-art/contact-mobile.webp" data-src="media/scene-art/contact-mobile.mp4" muted playsinline webkit-playsinline loop preload="none" aria-hidden="true"></video>
         <header class="contact-intro">
           
           <h2 class="site-headline" lang="en"><span class="contact-title-first">LET’S</span> <span class="contact-title-work">WORK</span></h2>
@@ -3525,7 +3534,7 @@ body.is-touch-layout .player-action-row :is(button,.player-original) { padding-i
         <div class="contact-receipt">
           <header class="contact-card-heading"><h3>联系我</h3><p lang="en">GET IN TOUCH</p></header>
           <figure class="contact-qr">
-            <div class="contact-qr-frame"><img src="media/wechat-contact-qr.png" width="761" height="754" alt="微信联系二维码" decoding="async"></div>
+            <div class="contact-qr-frame"><img id="contact-qr-image" data-src="media/wechat-contact-qr.png" width="761" height="754" alt="微信联系二维码" decoding="async"></div>
             <figcaption><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round"><path d="M13 15a8 8 0 1 1 2.5-7M6 14l-2 3 4-1"/><path d="M21 13a5.5 5.5 0 1 0-2 4.2l2 .8-.8-2.1A5.5 5.5 0 0 0 21 13Z"/><path d="M7.5 7.5h.1m3.5 0h.1m3.5 5h.1m2.8 0h.1"/></svg><span>微信扫一扫 · 添加好友</span></figcaption>
           </figure>
           <div class="contact-card-details">
@@ -3616,9 +3625,10 @@ body.is-touch-layout .player-action-row :is(button,.player-original) { padding-i
   </dialog>
 
   <div class="stage" aria-hidden="true">
-    <video id="intro-video" class="film is-visible" data-src="media/scene-art/intro-motion-1080.mp4" data-motion-bytes="10085016" data-motion-init="821" data-motion-offsets="1317,298695,606005,891175,1183142,1449306,1710948,1987576,2247915,2505282,2758650,3029516,3295005,3544751,3820146,4088442,4347726,4606713,4859562,5179522,5385716,5628405,5901976,6192000,6461609,6711818,6965256,7239263,7497248,7757065,8034301,8305998,8564217,8814816,9082381,9350268,9606986,9871251,10084246" data-motion-frames="568" data-motion-part-frames="15" data-motion-codec="avc1.640028" poster="media/intro-fullscreen-poster.jpg" muted playsinline webkit-playsinline preload="auto" disablepictureinpicture></video>
-    <video id="main-video" class="film" data-src="media/scene-art/timeline-desktop.mp4" data-mobile-src="media/scene-art/timeline-mobile.mp4" poster="media/main3-poster.jpg" muted playsinline webkit-playsinline preload="auto" disablepictureinpicture></video>
-    <video id="outro-video" class="film" data-src="media/scene-art/contact-desktop.mp4" poster="media/contact3-poster.jpg" muted playsinline webkit-playsinline preload="auto" disablepictureinpicture></video>
+    <video id="intro-video" class="film is-visible" data-src="media/scene-art/intro-motion-1080.mp4" data-motion-bytes="10085016" data-motion-init="821" data-motion-offsets="1317,298695,606005,891175,1183142,1449306,1710948,1987576,2247915,2505282,2758650,3029516,3295005,3544751,3820146,4088442,4347726,4606713,4859562,5179522,5385716,5628405,5901976,6192000,6461609,6711818,6965256,7239263,7497248,7757065,8034301,8305998,8564217,8814816,9082381,9350268,9606986,9871251,10084246" data-motion-frames="568" data-motion-part-frames="15" data-motion-codec="avc1.640028" muted playsinline webkit-playsinline preload="auto" disablepictureinpicture></video>
+    <script>document.getElementById('intro-video').poster = window.DYIntroPoster;</script>
+    <video id="main-video" class="film" data-src="media/scene-art/timeline-desktop.mp4" data-mobile-src="media/scene-art/timeline-mobile.mp4" data-poster="media/main3-poster.jpg" data-mobile-poster="media/scene-art/timeline-mobile-poster.webp" muted playsinline webkit-playsinline preload="auto" disablepictureinpicture></video>
+    <video id="outro-video" class="film" data-src="media/scene-art/contact-desktop.mp4" data-poster="media/contact3-poster.jpg" muted playsinline webkit-playsinline preload="auto" disablepictureinpicture></video>
     <div class="scrim"></div>
   </div>
 
@@ -4104,7 +4114,7 @@ window.DY_RESUME = {
   <script data-source="mobile-layout.js">
 'use strict';
 (() => {
-  const phone = matchMedia('(pointer: coarse) and (max-width: 1024px), (pointer: coarse) and (max-height: 540px), (max-width: 700px)');
+  const phone = window.DYMobileMedia;
   const matches = phone.matches;
   const reduce = matchMedia('(prefers-reduced-motion: reduce)');
   document.body.classList.toggle('is-touch-layout', matches);
@@ -4124,6 +4134,7 @@ window.DY_RESUME = {
       contact.pause();
       return;
     }
+    if (!contact.poster) contact.poster = contact.dataset.poster;
     if (reduce.matches) return;
     if (!contact.getAttribute('src')) contact.src = contact.dataset.src;
     contact.play().catch(() => {});
@@ -4329,14 +4340,15 @@ window.DY_RESUME = {
       const intro = document.getElementById('intro-video');
       const main = document.getElementById('main-video');
       const outro = document.getElementById('outro-video');
+      const contactQr = document.getElementById('contact-qr-image');
       const touchLayout = window.DYMobileLayout;
       function loadTimeline() {
         if (!main.hasAttribute('src')) {
+          main.poster = touchLayout.matches ? main.dataset.mobilePoster : main.dataset.poster;
           main.src = touchLayout.matches ? main.dataset.mobileSrc : main.dataset.src;
         }
       }
-      if (touchLayout.matches) loadTimeline();
-      else intro.addEventListener('loadeddata', () => setTimeout(loadTimeline, 1000), { once: true });
+      if (!touchLayout.matches) intro.addEventListener('loadeddata', () => setTimeout(loadTimeline, 1000), { once: true });
       const films = { intro, main, outro };
       const loops = touchLayout.matches ? [] : [outro];
       const progressLine = document.getElementById('progress-line');
@@ -4645,7 +4657,10 @@ window.DY_RESUME = {
         const delta = Math.min(.05, lastFrame ? (now - lastFrame) / 1000 : 1 / 60);
         lastFrame = now;
         const p = readProgress();
-        if (p > 0 && window.DYGalleryTimeline.state.physical < OUTRO_START) loadTimeline();
+        const timelineState = window.DYGalleryTimeline.state;
+        const needsTimeline = p > 0 && timelineState.physical < OUTRO_START &&
+          (!touchLayout.matches || timelineState.targetPhase === 'resume' || timelineState.targetPhase === 'transition');
+        if (needsTimeline) loadTimeline();
         const targetTime = window.DYGalleryTimeline.mediaProgress(p) * duration;
         if(window.DYGalleryTimeline.consumeCut()){
           smoothTime=targetTime;lastWrittenTime=NaN;lastSeek=-Infinity;
@@ -4654,16 +4669,20 @@ window.DY_RESUME = {
         const follow = motionQuery.matches ? 1 : 1 - Math.exp(-delta / .055);
         smoothTime += (targetTime - smoothTime) * follow;
         if (window.DYChapterBridges?.active) { smoothTime=main.currentTime;lastWrittenTime=main.currentTime;lastSeek=now; }
-        else seekMain(now, targetTime);
+        else if (needsTimeline || !touchLayout.matches) seekMain(now, targetTime);
 
         document.body.dataset.scrollProgress = String(p);
         requestedMode = window.DYChapterBridges?.forceMain ? 'main' : window.DYGalleryTimeline.state.physical === 0 ? 'intro' : window.DYGalleryTimeline.state.physical >= OUTRO_START ? 'outro' : 'main';
         if (requestedMode !== 'intro' && !intro.paused) intro.pause();
-        if (requestedMode === 'outro' && !touchLayout.matches && !outro.hasAttribute('src')) {
-          outro.src = outro.dataset.src;
+        if (requestedMode === 'outro') {
+          if (!contactQr.hasAttribute('src')) contactQr.src = contactQr.dataset.src;
+          if (!touchLayout.matches && !outro.hasAttribute('src')) {
+            outro.poster = outro.dataset.poster;
+            outro.src = outro.dataset.src;
+          }
         }
         // The outro can display its poster immediately while its loop buffers.
-        const nextReady = requestedMode !== 'main' ||
+        const nextReady = requestedMode !== 'main' || touchLayout.matches ||
           (mainFrameReady && (visibleMode === 'main' || Math.abs(presentedMainTime - targetTime) < .12));
         if (nextReady) changeVisibleMode(requestedMode);
         settledIntro = p === 0 && visibleMode === 'intro' && requestedMode === 'intro';
@@ -4674,7 +4693,7 @@ window.DY_RESUME = {
         window.DYDesignGallery?.update(now);
         window.DYTextMotion?.update(visualP, now);
         progressLine.style.transform = `scaleX(${window.DYGalleryTimeline.state.physical})`;
-        const nextClock = clock(durationReady ? presentedMainTime : 0);
+        const nextClock = clock(touchLayout.matches ? targetTime : durationReady ? presentedMainTime : 0);
         if (nextClock !== lastClock) { currentClock.textContent = nextClock; lastClock = nextClock; }
         const hintMode = window.DYGalleryTimeline.state.targetPhase === 'contact' ? 'contact' : requestedMode;
         if (hintMode !== lastHint) {
@@ -4691,7 +4710,7 @@ window.DY_RESUME = {
         button.addEventListener('click', () => {
           const p = Number(button.dataset.progress);
           // 不拦截滚轮，不改写用户的惯性滚动，只驱动视频本身。
-          window.scrollTo({ top: track.offsetTop + window.DYGalleryTimeline.position(p), behavior: motionQuery.matches ? 'instant' : 'smooth' });
+          window.scrollTo({ top: track.offsetTop + window.DYGalleryTimeline.position(p), behavior: touchLayout.matches || motionQuery.matches ? 'instant' : 'smooth' });
         });
       });
       window.addEventListener('pointermove', event => {
@@ -4882,6 +4901,7 @@ window.DY_PORTFOLIO = {
       "hasAudio": true,
       "preview": "media/works/realistic-02-preview.mp4?v=3",
       "full": "media/mobile/realistic-02.mp4?v=3",
+      "mobileSource": "media/mobile/realistic-02-720.mp4",
       "originalDownload": "https://github.com/ct217338259/daiyang-portfolio/releases/download/videos-v1/realistic-02-master-1080.mp4",
       "poster": "media/work-covers/realistic-02.png",
       "portrait": false,
@@ -4901,6 +4921,7 @@ window.DY_PORTFOLIO = {
       "hasAudio": true,
       "preview": "media/works/realistic-03-preview.mp4?v=3",
       "full": "media/mobile/realistic-03.mp4?v=3",
+      "mobileSource": "media/mobile/realistic-03-720.mp4",
       "originalDownload": "https://github.com/ct217338259/daiyang-portfolio/releases/download/videos-v1/realistic-03-master-1080.mp4",
       "poster": "media/work-covers/realistic-03.jpg",
       "portrait": false,
@@ -5222,7 +5243,7 @@ window.DY_CASES = [
   const timeLabel = seconds => `${String(Math.floor(Math.max(0,seconds)/60)).padStart(2,'0')}:${String(Math.floor(Math.max(0,seconds)%60)).padStart(2,'0')}`;
   const escape = value => String(value).replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
   function canPlay(item) { return !window.DY_SHELL_ONLY || item?.localPlayback===true; }
-  function hasQualityChoice(item) { return !item.full.startsWith('media/mobile/'); }
+  function hasQualityChoice(item) { return Boolean(item.mobileSource) || !item.full.startsWith('media/mobile/'); }
   let hoverPreview=null;
   function stopHoverPreview(button) {
     if(!hoverPreview||(button&&hoverPreview.button!==button))return;
@@ -5346,7 +5367,7 @@ window.DY_CASES = [
       startupTimer = 0;
       if (document.hidden || !activeItem || !playerDialog.open || !tryingToPlay) return;
       const message = !hasQualityChoice(activeItem) ? '加载较慢，可点「重试视频」。'
-        : useOriginal ? '原画加载较慢，可切换流畅版。' : '加载较慢，可点「重试视频」或切换原画。';
+        : useOriginal ? '加载较慢，可切换流畅版。' : '加载较慢，可点「重试视频」或切换画质。';
       setStatus(message, true);
     }, 6000);
   }
@@ -5369,19 +5390,19 @@ window.DY_CASES = [
     player.pause();
     const hasAlternate = hasQualityChoice(activeItem);
     qualityButton.hidden = !hasAlternate;
-    qualityButton.textContent = useOriginal ? '切换流畅版' : '切换原画';
+    qualityButton.textContent = useOriginal ? '切换流畅版' : activeItem.mobileSource ? '切换 1080p' : '切换原画';
     if (activeItem.originalDownload) originalLink.href = activeItem.originalDownload;
     else originalLink.removeAttribute('href');
     originalLink.hidden = !activeItem.originalDownload;
-    const qualityLabel = hasAlternate ? (useOriginal ? ' · 原画' : ' · 流畅')
-      : activeItem.originalDownload ? ' · 1080p' : '';
+    const qualityLabel = activeItem.mobileSource ? (useOriginal ? ' · 1080p' : ' · 720p 流畅')
+      : hasAlternate ? (useOriginal ? ' · 原画' : ' · 流畅') : '';
     document.getElementById('player-description').textContent = `${activeItem.categoryLabel} · 完整成片${qualityLabel}`;
     const file = activeItem.full.split('/').pop();
-    player.src = !hasAlternate || useOriginal ? activeItem.full : 'media/mobile/' + file;
+    player.src = !hasAlternate || useOriginal ? activeItem.full : activeItem.mobileSource || 'media/mobile/' + file;
     progress.disabled = true;
     progress.value = String(pendingTime);
     playButton.textContent = '播放';
-    setStatus(useOriginal ? '正在加载原画…' : '正在加载视频…');
+    setStatus(useOriginal ? (activeItem.mobileSource ? '正在加载 1080p…' : '正在加载原画…') : '正在加载视频…');
   }
   function openPlayer(item,startTime) {
     if(!item)return;
@@ -5410,7 +5431,7 @@ window.DY_CASES = [
     player.classList.toggle('is-portrait',Boolean(item.portrait));
     player.poster=item.poster;
     player.muted=false;player.defaultMuted=false;player.loop=false;player.volume=Number(volume.value);
-    useOriginal=hasQualityChoice(item) && preferOriginal;
+    useOriginal=item.mobileSource ? !mobile : hasQualityChoice(item) && preferOriginal;
     progress.max=String(item.duration);
     setVideoSource();
     document.getElementById('player-current').textContent=timeLabel(pendingTime);
@@ -5465,7 +5486,7 @@ window.DY_CASES = [
     tryingToPlay=false;
     stopStartupTimer();
     const message = !hasQualityChoice(activeItem) ? '视频无法加载，请点击重试视频。'
-      : useOriginal ? '原画无法加载，可切换流畅版。' : '视频无法加载，可重试或切换原画。';
+      : useOriginal ? '视频无法加载，可切换流畅版。' : '视频无法加载，可重试或切换画质。';
     setStatus(message,true);
   });
   player.addEventListener('volumechange',()=>{muteButton.textContent=player.muted||player.volume===0?'开启声音':'静音';muteButton.setAttribute('aria-pressed',String(player.muted));});
