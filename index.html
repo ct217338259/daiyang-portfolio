@@ -3920,6 +3920,7 @@ window.DY_RESUME = {
   const clamp=n=>Math.max(0,Math.min(1,n)),ease=n=>1-Math.pow(1-clamp(n),3);
   const state={active:false,name:'',phase:'idle',from:0,to:0,blockedInputs:0,native:false};
   const history=[];
+  const folderBridgeRate=1.8;
   let phaseAt=0,anchor=0,prepared=false,pending=false,fallback=false,playAt=0;
   let lastIntent=-Infinity,previousSource=0,quietUntil=0,completed=false,lastWrite=-Infinity;
   let touchY=null,inputKind='';
@@ -3982,7 +3983,7 @@ window.DY_RESUME = {
   function play(now){
     if(pending||fallback||document.hidden)return;
     pending=true;playAt=now;
-    video.playbackRate=1;
+    video.playbackRate=state.name==='resume-folder'?folderBridgeRate:1;
     const promise=video.play();
     Promise.resolve(promise).then(()=>{
       pending=false;
@@ -4034,7 +4035,8 @@ window.DY_RESUME = {
     }
     if(state.phase==='exiting'){
       scrollTo({top:anchor,behavior:'instant'});
-      const q=clamp((now-phaseAt)/300);paint(1-ease(q),0);
+      const fadeOut=state.name==='resume-folder'?180:300;
+      const q=clamp((now-phaseAt)/fadeOut);paint(1-ease(q),0);
       if(q===1){
         try{video.currentTime=state.from;}catch(_){}
         follow(state.from);phase('priming',now);
@@ -4050,7 +4052,8 @@ window.DY_RESUME = {
     }
     if(state.phase==='playing'){
       if(fallback){
-        const time=Math.min(state.to,state.from+(now-playAt)/1000);
+        const rate=state.name==='resume-folder'?folderBridgeRate:1;
+        const time=Math.min(state.to,state.from+(now-playAt)*rate/1000);
         if(now-lastWrite>=1000/30&&(!video.seeking||now-lastWrite>120)){
           try{video.currentTime=Math.round(time*60)/60;lastWrite=now;}catch(_){}
         }
@@ -4060,7 +4063,8 @@ window.DY_RESUME = {
       return;
     }
     if(state.phase==='arriving'){
-      follow(state.to);const q=clamp((now-phaseAt)/760);paint(0,ease(q));
+      const fadeIn=state.name==='resume-folder'?360:760;
+      follow(state.to);const q=clamp((now-phaseAt)/fadeIn);paint(0,ease(q));
       if(q===1)finish(now);
     }
   }
@@ -4095,7 +4099,7 @@ window.DY_RESUME = {
   // Explicit navigation can supersede an automatic bridge; wheel motion cannot.
   window.addEventListener('click',e=>{
     if(!state.active||!e.target.closest('[data-progress],[data-gallery-go],.resume-stop,.journey-card-next'))return;
-    video.pause();state.active=false;state.phase='idle';pending=false;completed=true;galleryMix=null;
+    video.pause();video.playbackRate=1;state.active=false;state.phase='idle';pending=false;completed=true;galleryMix=null;
     lastIntent=-Infinity;inputKind='';quietUntil=performance.now()+100;
     delete body.dataset.autoBridge;delete body.dataset.bridgePhase;paint(1,1);
   },{capture:true});
@@ -5674,6 +5678,13 @@ window.DY_CASES = [
     const button=document.createElement('button');button.type='button';button.className='resume-stop';button.textContent=step.nav;button.setAttribute('aria-label',`查看${step.nav}：${step.title}`);button.setAttribute('aria-current','false');button.addEventListener('click',()=>go(step));rail.append(button);records.push({panel,button});
   });
   const wall=document.getElementById('journey-film-wall');
+  const coverObserver='IntersectionObserver' in window?new IntersectionObserver((entries,observer)=>{
+    for(const {target,isIntersecting} of entries){
+      if(!isIntersecting)continue;
+      target.src=target.dataset.coverSrc;
+      observer.unobserve(target);
+    }
+  },{root:wall,rootMargin:'140px 0px'}):null;
   const portraitTitlePositions={
     'interactive-01':'6%', 'interactive-02':'36%', 'interactive-03':'7%',
     'interactive-04':'0%', 'interactive-05':'59%', 'interactive-06':'24%'
@@ -5702,7 +5713,7 @@ window.DY_CASES = [
       track.style.setProperty('--cover-count',ids.length);
       const group=document.createElement('div');
       group.className='journey-cover-group';
-      ids.forEach(id=>{
+      ids.forEach((id,index)=>{
         const tile=document.createElement('div');
         tile.className='journey-cover-tile';
         const aperture=document.createElement('div');
@@ -5710,7 +5721,12 @@ window.DY_CASES = [
         const image=new Image();
         image.alt='';
         image.decoding='async';
-        image.src=`media/journey-covers/${id}.webp`;
+        const coverSrc=`media/journey-covers/${id}.webp?v=2`;
+        if(index<3||!coverObserver)image.src=coverSrc;
+        else{
+          image.fetchPriority='low';
+          image.dataset.coverSrc=coverSrc;
+        }
         const titlePosition=portraitTitlePositions[id];
         if(titlePosition){
           tile.classList.add('is-portrait-cover');
@@ -5726,14 +5742,28 @@ window.DY_CASES = [
       tilt.append(column);
     });
     wall.append(tilt);
+    if(coverObserver){
+      const firstRowImages=[...wall.querySelectorAll('.journey-cover-group:first-child img[src]')];
+      // Let the first visible rows decode before requesting extra tiles along the film strip.
+      Promise.allSettled(firstRowImages.map(image=>image.decode())).then(()=>{
+        wall.querySelectorAll('img[data-cover-src]').forEach(image=>coverObserver.observe(image));
+      });
+    }
   }
   let wallProgress;
   let shownCursor;
+  let previousProgress,previousTarget,previousWide,previousReduced;
   let lastFrame=performance.now();
 
   function update(p){
     if(document.body.dataset.overlay)return;
-    const state=window.DY_SCROLL.resumeAt(p,reduce.matches),strength=Math.max(0,...state.weights),active=state.index,visible=strength>.005;
+    const reduced=reduce.matches,wide=innerWidth>1000&&innerHeight>540;
+    const now=performance.now();
+    const frameSeconds=clamp((now-lastFrame)/1000,0,.05);
+    lastFrame=now;
+    if(p===previousProgress&&shownCursor===previousTarget&&wide===previousWide&&reduced===previousReduced)return;
+    previousProgress=p;previousWide=wide;previousReduced=reduced;
+    const state=window.DY_SCROLL.resumeAt(p,reduced),strength=Math.max(0,...state.weights),active=state.index,visible=strength>.005;
     const entry=clamp((p-.012)/.014),exit=1-clamp((p-.430)/.014);
     root.inert=!visible;root.setAttribute('aria-hidden',String(!visible));root.style.visibility=visible?'visible':'hidden';root.style.opacity=String(entry*exit);root.style.setProperty('--resume-strength',String(entry*exit));root.dataset.activeStep=active>=0?steps[active].id:'';
     // The introductory profile leaves the character unobstructed. Years enter
@@ -5754,18 +5784,15 @@ window.DY_CASES = [
     // Use the existing year overlap as a reversible scroll timeline.
     const totalWeight=state.weights.reduce((sum,weight)=>sum+weight,0);
     const target=totalWeight?state.weights.reduce((sum,weight,index)=>sum+weight*index,0)/totalWeight:0;
-    const now=performance.now();
-    const frameSeconds=clamp((now-lastFrame)/1000,0,.05);
-    lastFrame=now;
-    if(!showYears||!wasShowingYears||shownCursor===undefined||reduce.matches)shownCursor=target;
+    previousTarget=target;
+    if(!showYears||!wasShowingYears||shownCursor===undefined||reduced)shownCursor=target;
     else shownCursor+=(target-shownCursor)*(1-Math.exp(-frameSeconds*13));
     if(Math.abs(target-shownCursor)<.001)shownCursor=target;
-    const wide=innerWidth>1000&&innerHeight>540;
     records.forEach(({panel,button},index)=>{
       const current=index===active;
       const offset=index-shownCursor;
       const distance=Math.abs(offset);
-      const stacked=showYears&&!reduce.matches&&panel.classList.contains('journey-year-panel')&&distance<(wide?4.5:1.45);
+      const stacked=showYears&&!reduced&&panel.classList.contains('journey-year-panel')&&distance<(wide?4.5:1.45);
       const angle=offset*2*Math.PI/(wide?4.8:7);
       panel.classList.toggle('is-current',current);
       panel.classList.toggle('is-in-stack',stacked);
