@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <script>
     window.DYMobileMedia = matchMedia('(pointer: coarse) and (max-width: 1024px), (pointer: coarse) and (max-height: 540px), (max-width: 700px)');
-    window.DYIntroPoster = DYMobileMedia.matches ? 'media/scene-art/intro-mobile-poster.webp' : 'media/intro-fullscreen-poster.jpg';
+    window.DYIntroPoster = DYMobileMedia.matches ? 'media/scene-art/intro-mobile-poster.webp' : 'media/intro-fullscreen-poster.webp';
     const introPreload = document.createElement('link');
     introPreload.rel = 'preload';
     introPreload.as = 'image';
@@ -3625,10 +3625,10 @@ body.is-touch-layout .player-action-row :is(button,.player-original) { padding-i
   </dialog>
 
   <div class="stage" aria-hidden="true">
-    <video id="intro-video" class="film is-visible" data-src="media/scene-art/intro-motion-1080.mp4" data-motion-bytes="10085016" data-motion-init="821" data-motion-offsets="1317,298695,606005,891175,1183142,1449306,1710948,1987576,2247915,2505282,2758650,3029516,3295005,3544751,3820146,4088442,4347726,4606713,4859562,5179522,5385716,5628405,5901976,6192000,6461609,6711818,6965256,7239263,7497248,7757065,8034301,8305998,8564217,8814816,9082381,9350268,9606986,9871251,10084246" data-motion-frames="568" data-motion-part-frames="15" data-motion-codec="avc1.640028" muted playsinline webkit-playsinline preload="auto" disablepictureinpicture></video>
+    <video id="intro-video" class="film is-visible" data-src="media/scene-art/intro-motion-1080.mp4" data-motion-bytes="6687552" data-motion-init="820" data-motion-offsets="1316,180286,363712,541952,734980,912228,1083170,1265984,1444357,1612294,1777951,1956897,2141908,2309421,2488844,2669484,2844940,3012509,3173535,3359139,3531901,3677595,3869019,4066436,4245865,4419186,4580655,4763670,4941456,5111629,5295064,5478306,5655175,5817320,5990734,6172881,6341874,6523040,6686782" data-motion-frames="568" data-motion-part-frames="15" data-motion-codec="avc1.640028" muted playsinline webkit-playsinline preload="auto" disablepictureinpicture></video>
     <script>document.getElementById('intro-video').poster = window.DYIntroPoster;</script>
-    <video id="main-video" class="film" data-src="media/scene-art/timeline-desktop.mp4" data-mobile-src="media/scene-art/timeline-mobile.mp4" data-poster="media/main3-poster.jpg" data-mobile-poster="media/scene-art/timeline-mobile-poster.webp" muted playsinline webkit-playsinline preload="auto" disablepictureinpicture></video>
-    <video id="outro-video" class="film" data-src="media/scene-art/contact-desktop.mp4" data-poster="media/contact3-poster.jpg" muted playsinline webkit-playsinline preload="auto" disablepictureinpicture></video>
+    <video id="main-video" class="film" data-src="media/scene-art/timeline-desktop.mp4" data-mobile-src="media/scene-art/timeline-mobile.mp4" data-poster="media/main3-poster.webp" data-mobile-poster="media/scene-art/timeline-mobile-poster.webp" muted playsinline webkit-playsinline preload="auto" disablepictureinpicture></video>
+    <video id="outro-video" class="film" data-src="media/scene-art/contact-desktop.mp4" data-poster="media/contact3-poster.webp" muted playsinline webkit-playsinline preload="auto" disablepictureinpicture></video>
     <div class="scrim"></div>
   </div>
 
@@ -4206,7 +4206,7 @@ window.DY_RESUME = {
     const source = new MediaSource();
     const sourceURL = URL.createObjectURL(source);
     let buffer, writing, downloading = 0, remaining = states.length;
-    let background = false, failed = false;
+    let failed = false;
 
     function fallback() {
       if (failed) return;
@@ -4242,10 +4242,8 @@ window.DY_RESUME = {
 
     function download() {
       if (failed) return;
-      while (downloading < 5) {
-        const index = queue.size ? queue.values().next().value
-          : background && document.body.dataset.mode === 'intro' ? states.indexOf(0) : -1;
-        if (index < 0) return;
+      while (downloading < 5 && queue.size) {
+        const index = queue.values().next().value;
         queue.delete(index);
         states[index] = 1;
         downloading++;
@@ -4293,14 +4291,9 @@ window.DY_RESUME = {
         if (motionParts) states[0] = 1;
         appends.unshift({ index: motionParts ? 0 : -1, bytes: first });
         appendNext();
-        warm(0, 2 * partFrames);
-        warm(Math.floor(frameCount / 2), partFrames);
       } catch (_) {
         fallback();
       }
-    }, { once: true });
-    video.addEventListener('loadeddata', () => {
-      setTimeout(() => { background = true; download(); }, 350);
     }, { once: true });
     video.src = sourceURL;
     return warm;
@@ -4348,7 +4341,6 @@ window.DY_RESUME = {
           main.src = touchLayout.matches ? main.dataset.mobileSrc : main.dataset.src;
         }
       }
-      if (!touchLayout.matches) intro.addEventListener('loadeddata', () => setTimeout(loadTimeline, 1000), { once: true });
       const films = { intro, main, outro };
       const loops = touchLayout.matches ? [] : [outro];
       const progressLine = document.getElementById('progress-line');
@@ -4580,6 +4572,11 @@ window.DY_RESUME = {
         if (intro.seeking || intro.readyState < 2) return;
         const mediaTime = Number.isFinite(headPresented) ? headPresented : intro.currentTime;
         const frame = Math.min(2 * frameCount - 1, Math.round(mediaTime / HEAD_FRAME));
+        if (!direction && frame < 2) {
+          intro.pause();
+          intro.currentTime = HEAD_CENTER;
+          return;
+        }
         const reverse = frame >= frameCount;
         const logicalFrame = reverse ? 2 * frameCount - 1 - frame : frame;
         const distance = headDistance(logicalFrame * HEAD_FRAME, headTarget, duration);
@@ -4658,8 +4655,9 @@ window.DY_RESUME = {
         lastFrame = now;
         const p = readProgress();
         const timelineState = window.DYGalleryTimeline.state;
-        const needsTimeline = p > 0 && timelineState.physical < OUTRO_START &&
-          (!touchLayout.matches || timelineState.targetPhase === 'resume' || timelineState.targetPhase === 'transition');
+        const needsTimeline = window.DYChapterBridges?.active ||
+          (p > 0 && timelineState.physical < OUTRO_START &&
+            (!touchLayout.matches || timelineState.targetPhase === 'resume' || timelineState.targetPhase === 'transition'));
         if (needsTimeline) loadTimeline();
         const targetTime = window.DYGalleryTimeline.mediaProgress(p) * duration;
         if(window.DYGalleryTimeline.consumeCut()){
@@ -4853,7 +4851,7 @@ window.DY_PORTFOLIO = {
       "hasAudio": true,
       "preview": "media/works/anime-06-preview.mp4",
       "full": "https://github.com/ct217338259/daiyang-portfolio/releases/download/videos-v1/anime-06.mp4",
-      "poster": "media/work-covers/anime-06-cover.png",
+      "poster": "media/work-covers/anime-06-cover.webp",
       "portrait": false,
       "fullBytes": 306613399,
       "previewBytes": 16713547,
@@ -4885,7 +4883,7 @@ window.DY_PORTFOLIO = {
       "hasAudio": true,
       "preview": "media/works/realistic-01-preview.mp4",
       "full": "https://github.com/ct217338259/daiyang-portfolio/releases/download/videos-v1/realistic-01.mp4",
-      "poster": "media/work-covers/realistic-01.png",
+      "poster": "media/work-covers/realistic-01.webp",
       "portrait": false,
       "fullBytes": 40119913,
       "previewBytes": 2981759,
@@ -4903,7 +4901,7 @@ window.DY_PORTFOLIO = {
       "full": "media/mobile/realistic-02.mp4?v=3",
       "mobileSource": "media/mobile/realistic-02-720.mp4",
       "originalDownload": "https://github.com/ct217338259/daiyang-portfolio/releases/download/videos-v1/realistic-02-master-1080.mp4",
-      "poster": "media/work-covers/realistic-02.png",
+      "poster": "media/work-covers/realistic-02.webp",
       "portrait": false,
       "fullBytes": 57117832,
       "previewBytes": 874488,
@@ -4990,7 +4988,7 @@ window.DY_PORTFOLIO = {
       "localPlayback": true,
       "preview": "media/works/realistic-08-preview.mp4",
       "full": "https://github.com/ct217338259/daiyang-portfolio/releases/download/videos-v1/realistic-08.mp4",
-      "poster": "media/work-covers/realistic-08.png",
+      "poster": "media/work-covers/realistic-08.webp",
       "portrait": false,
       "fullBytes": 95871433,
       "previewBytes": 3551638,
@@ -5005,7 +5003,7 @@ window.DY_PORTFOLIO = {
       "hasAudio": true,
       "preview": "media/works/interactive-01-preview.mp4",
       "full": "https://github.com/ct217338259/daiyang-portfolio/releases/download/videos-v1/interactive-01.mp4",
-      "poster": "media/work-covers/interactive-01.png",
+      "poster": "media/work-covers/interactive-01.webp",
       "portrait": true,
       "fullBytes": 26512447,
       "previewBytes": 2893626,
@@ -5021,7 +5019,7 @@ window.DY_PORTFOLIO = {
       "hasAudio": true,
       "preview": "media/works/interactive-02-preview.mp4",
       "full": "https://github.com/ct217338259/daiyang-portfolio/releases/download/videos-v1/interactive-02.mp4",
-      "poster": "media/work-covers/interactive-02.png",
+      "poster": "media/work-covers/interactive-02.webp",
       "portrait": true,
       "fullBytes": 27494285,
       "previewBytes": 3655487,
@@ -5037,7 +5035,7 @@ window.DY_PORTFOLIO = {
       "hasAudio": true,
       "preview": "media/works/interactive-03-preview.mp4",
       "full": "https://github.com/ct217338259/daiyang-portfolio/releases/download/videos-v1/interactive-03.mp4",
-      "poster": "media/work-covers/interactive-03.png",
+      "poster": "media/work-covers/interactive-03.webp",
       "portrait": true,
       "fullBytes": 23913918,
       "previewBytes": 3330298,
@@ -5053,7 +5051,7 @@ window.DY_PORTFOLIO = {
       "hasAudio": true,
       "preview": "media/works/interactive-04-preview.mp4",
       "full": "https://github.com/ct217338259/daiyang-portfolio/releases/download/videos-v1/interactive-04.mp4",
-      "poster": "media/work-covers/interactive-04.png",
+      "poster": "media/work-covers/interactive-04.webp",
       "portrait": true,
       "fullBytes": 33228796,
       "previewBytes": 3683751,
@@ -5069,7 +5067,7 @@ window.DY_PORTFOLIO = {
       "hasAudio": true,
       "preview": "media/works/interactive-05-preview.mp4",
       "full": "https://github.com/ct217338259/daiyang-portfolio/releases/download/videos-v1/interactive-05.mp4",
-      "poster": "media/work-covers/interactive-05.png",
+      "poster": "media/work-covers/interactive-05.webp",
       "portrait": true,
       "fullBytes": 28099752,
       "previewBytes": 3664570,
@@ -5085,7 +5083,7 @@ window.DY_PORTFOLIO = {
       "hasAudio": true,
       "preview": "media/works/interactive-06-preview.mp4",
       "full": "https://github.com/ct217338259/daiyang-portfolio/releases/download/videos-v1/interactive-06.mp4",
-      "poster": "media/work-covers/interactive-06.png",
+      "poster": "media/work-covers/interactive-06.webp",
       "portrait": true,
       "fullBytes": 22194284,
       "previewBytes": 2744247,

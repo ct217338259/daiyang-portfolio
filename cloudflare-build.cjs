@@ -1,6 +1,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { createHash } = require('node:crypto');
+const { minify } = require('html-minifier-terser');
 
 const output = path.resolve(process.argv[2] || 'dist');
 const maxAssetBytes = 25 * 1024 * 1024;
@@ -82,15 +83,28 @@ function copyMedia(directory) {
   }
 }
 
-writeAsset('mobile-video-worker.js', fs.readFileSync('mobile-video-worker.js'));
-copyMedia('media');
-writeAsset('index.html', Buffer.from(index));
-writeAsset('_video/index.json', Buffer.from(JSON.stringify(manifest)));
-writeAsset('_headers', Buffer.from('/_video/:hash/:part\n  Cache-Control: public, max-age=31536000, immutable\n\n/_video/:hash/motion/:part\n  Cache-Control: public, max-age=31536000, immutable\n'));
-writeAsset('_routes.json', Buffer.from(JSON.stringify({
-  version: 1,
-  include: Object.keys(manifest),
-  exclude: [],
-})));
+async function build() {
+  writeAsset('mobile-video-worker.js', fs.readFileSync('mobile-video-worker.js'));
+  copyMedia('media');
+  const html = await minify(index, {
+    collapseWhitespace: true,
+    conservativeCollapse: true,
+    removeComments: true,
+    minifyCSS: true,
+    minifyJS: true,
+  });
+  writeAsset('index.html', Buffer.from(html));
+  writeAsset('_video/index.json', Buffer.from(JSON.stringify(manifest)));
+  writeAsset('_headers', Buffer.from('/_video/:hash/:part\n  Cache-Control: public, max-age=31536000, immutable\n\n/_video/:hash/motion/:part\n  Cache-Control: public, max-age=31536000, immutable\n'));
+  writeAsset('_routes.json', Buffer.from(JSON.stringify({
+    version: 1,
+    include: Object.keys(manifest),
+    exclude: [],
+  })));
+  console.log(`Built ${output} with ${Object.keys(manifest).length} video routes.`);
+}
 
-console.log(`Built ${output} with ${Object.keys(manifest).length} original-byte video routes.`);
+build().catch(error => {
+  console.error(error);
+  process.exitCode = 1;
+});
