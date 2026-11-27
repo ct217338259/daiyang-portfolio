@@ -3920,7 +3920,6 @@ window.DY_RESUME = {
   const clamp=n=>Math.max(0,Math.min(1,n)),ease=n=>1-Math.pow(1-clamp(n),3);
   const state={active:false,name:'',phase:'idle',from:0,to:0,blockedInputs:0,native:false};
   const history=[];
-  const folderBridgeRate=1.8;
   let phaseAt=0,anchor=0,prepared=false,pending=false,fallback=false,playAt=0;
   let lastIntent=-Infinity,previousSource=0,quietUntil=0,completed=false,lastWrite=-Infinity;
   let touchY=null,inputKind='';
@@ -3983,7 +3982,7 @@ window.DY_RESUME = {
   function play(now){
     if(pending||fallback||document.hidden)return;
     pending=true;playAt=now;
-    video.playbackRate=state.name==='resume-folder'?folderBridgeRate:1;
+    video.playbackRate=1;
     const promise=video.play();
     Promise.resolve(promise).then(()=>{
       pending=false;
@@ -4035,8 +4034,7 @@ window.DY_RESUME = {
     }
     if(state.phase==='exiting'){
       scrollTo({top:anchor,behavior:'instant'});
-      const fadeOut=state.name==='resume-folder'?180:300;
-      const q=clamp((now-phaseAt)/fadeOut);paint(1-ease(q),0);
+      const q=clamp((now-phaseAt)/300);paint(1-ease(q),0);
       if(q===1){
         try{video.currentTime=state.from;}catch(_){}
         follow(state.from);phase('priming',now);
@@ -4052,8 +4050,7 @@ window.DY_RESUME = {
     }
     if(state.phase==='playing'){
       if(fallback){
-        const rate=state.name==='resume-folder'?folderBridgeRate:1;
-        const time=Math.min(state.to,state.from+(now-playAt)*rate/1000);
+        const time=Math.min(state.to,state.from+(now-playAt)/1000);
         if(now-lastWrite>=1000/30&&(!video.seeking||now-lastWrite>120)){
           try{video.currentTime=Math.round(time*60)/60;lastWrite=now;}catch(_){}
         }
@@ -4063,8 +4060,7 @@ window.DY_RESUME = {
       return;
     }
     if(state.phase==='arriving'){
-      const fadeIn=state.name==='resume-folder'?360:760;
-      follow(state.to);const q=clamp((now-phaseAt)/fadeIn);paint(0,ease(q));
+      follow(state.to);const q=clamp((now-phaseAt)/760);paint(0,ease(q));
       if(q===1)finish(now);
     }
   }
@@ -4099,7 +4095,7 @@ window.DY_RESUME = {
   // Explicit navigation can supersede an automatic bridge; wheel motion cannot.
   window.addEventListener('click',e=>{
     if(!state.active||!e.target.closest('[data-progress],[data-gallery-go],.resume-stop,.journey-card-next'))return;
-    video.pause();video.playbackRate=1;state.active=false;state.phase='idle';pending=false;completed=true;galleryMix=null;
+    video.pause();state.active=false;state.phase='idle';pending=false;completed=true;galleryMix=null;
     lastIntent=-Infinity;inputKind='';quietUntil=performance.now()+100;
     delete body.dataset.autoBridge;delete body.dataset.bridgePhase;paint(1,1);
   },{capture:true});
@@ -4358,6 +4354,8 @@ window.DY_RESUME = {
       const OUTRO_START = .98;
       const SEEK_INTERVAL = 1000 / 30;
       const FPS = 60;
+      const YEAR_SCROLL_START = 3.35;
+      const YEAR_BACKGROUND_TIME = 3.6;
       // The calibrated points are clockwise from the viewer's right.
       const HEAD_TIMES = [1.586, 8.381, 7.339, 6.706, 6.071, 4.893, 3.534, 2.537];
       const HEAD_CENTER = 2 / 30;
@@ -4659,19 +4657,23 @@ window.DY_RESUME = {
         lastFrame = now;
         const p = readProgress();
         const timelineState = window.DYGalleryTimeline.state;
-        const needsTimeline = window.DYChapterBridges?.active ||
+        const bridgeActive = window.DYChapterBridges?.active;
+        const needsTimeline = bridgeActive ||
           (p > 0 && timelineState.physical < OUTRO_START &&
             (!touchLayout.matches || timelineState.targetPhase === 'resume' || timelineState.targetPhase === 'transition'));
         if (needsTimeline) loadTimeline();
         const targetTime = window.DYGalleryTimeline.mediaProgress(p) * duration;
+        // The dated cards sit over a held background. Seeking it on every scroll tick delays the cards.
+        const scrollingYears = !bridgeActive && timelineState.targetPhase === 'resume' && targetTime >= YEAR_SCROLL_START;
+        const frameTarget = scrollingYears ? YEAR_BACKGROUND_TIME : targetTime;
         if(window.DYGalleryTimeline.consumeCut()){
-          smoothTime=targetTime;lastWrittenTime=NaN;lastSeek=-Infinity;
+          smoothTime=frameTarget;lastWrittenTime=NaN;lastSeek=-Infinity;
         }
         // 向下/向上均跟随同一个目标，停止滚动后约 150ms 内收敛。
         const follow = motionQuery.matches ? 1 : 1 - Math.exp(-delta / .055);
-        smoothTime += (targetTime - smoothTime) * follow;
-        if (window.DYChapterBridges?.active) { smoothTime=main.currentTime;lastWrittenTime=main.currentTime;lastSeek=now; }
-        else if (needsTimeline || !touchLayout.matches) seekMain(now, targetTime);
+        smoothTime = scrollingYears ? frameTarget : smoothTime + (frameTarget - smoothTime) * follow;
+        if (bridgeActive) { smoothTime=main.currentTime;lastWrittenTime=main.currentTime;lastSeek=now; }
+        else if (needsTimeline || !touchLayout.matches) seekMain(now, frameTarget);
 
         document.body.dataset.scrollProgress = String(p);
         requestedMode = window.DYChapterBridges?.forceMain ? 'main' : window.DYGalleryTimeline.state.physical === 0 ? 'intro' : window.DYGalleryTimeline.state.physical >= OUTRO_START ? 'outro' : 'main';
@@ -4685,17 +4687,18 @@ window.DY_RESUME = {
         }
         // The outro can display its poster immediately while its loop buffers.
         const nextReady = requestedMode !== 'main' || touchLayout.matches ||
-          (mainFrameReady && (visibleMode === 'main' || Math.abs(presentedMainTime - targetTime) < .12));
+          (mainFrameReady && (visibleMode === 'main' || Math.abs(presentedMainTime - frameTarget) < .12));
         if (nextReady) changeVisibleMode(requestedMode);
         settledIntro = p === 0 && visibleMode === 'intro' && requestedMode === 'intro';
         // Work scenes use the displayed video time, not a separate page section.
         const visualP = window.DYGalleryTimeline.sceneProgress(touchLayout.matches ? targetTime / duration : durationReady ? presentedMainTime / duration : 0,p,window.DYChapterBridges?.galleryMix);
+        const resumeP = scrollingYears && (touchLayout.matches || (timelineState.phase === 'resume' && visibleMode === 'main')) ? p : visualP;
         touchLayout.updateContact(requestedMode === 'outro');
-        window.DYScrollScene?.update(visualP);
+        window.DYScrollScene?.update(visualP, resumeP);
         window.DYDesignGallery?.update(now);
         window.DYTextMotion?.update(visualP, now);
         progressLine.style.transform = `scaleX(${window.DYGalleryTimeline.state.physical})`;
-        const nextClock = clock(touchLayout.matches ? targetTime : durationReady ? presentedMainTime : 0);
+        const nextClock = clock(touchLayout.matches || scrollingYears ? targetTime : durationReady ? presentedMainTime : 0);
         if (nextClock !== lastClock) { currentClock.textContent = nextClock; lastClock = nextClock; }
         const hintMode = window.DYGalleryTimeline.state.targetPhase === 'contact' ? 'contact' : requestedMode;
         if (hintMode !== lastHint) {
@@ -5751,15 +5754,13 @@ window.DY_CASES = [
     }
   }
   let wallProgress;
-  let shownCursor;
-  let previousProgress,previousTarget,previousWide,previousReduced;
+  let shownCursor,previousTarget,previousProgress,previousWide,previousReduced;
   let lastFrame=performance.now();
 
   function update(p){
     if(document.body.dataset.overlay)return;
     const reduced=reduce.matches,wide=innerWidth>1000&&innerHeight>540;
-    const now=performance.now();
-    const frameSeconds=clamp((now-lastFrame)/1000,0,.05);
+    const now=performance.now(),frameSeconds=clamp((now-lastFrame)/1000,0,.05);
     lastFrame=now;
     if(p===previousProgress&&shownCursor===previousTarget&&wide===previousWide&&reduced===previousReduced)return;
     previousProgress=p;previousWide=wide;previousReduced=reduced;
@@ -5786,7 +5787,7 @@ window.DY_CASES = [
     const target=totalWeight?state.weights.reduce((sum,weight,index)=>sum+weight*index,0)/totalWeight:0;
     previousTarget=target;
     if(!showYears||!wasShowingYears||shownCursor===undefined||reduced)shownCursor=target;
-    else shownCursor+=(target-shownCursor)*(1-Math.exp(-frameSeconds*13));
+    else shownCursor+=(target-shownCursor)*(1-Math.exp(-frameSeconds/.025));
     if(Math.abs(target-shownCursor)<.001)shownCursor=target;
     records.forEach(({panel,button},index)=>{
       const current=index===active;
@@ -6038,7 +6039,7 @@ window.DY_CASES = [
     mover.style.setProperty('--folder-x',`${Math.round(x)}px`);mover.style.setProperty('--folder-y',`${Math.round(y)}px`);
     mover.style.setProperty('--folder-scale',String(scale));mover.style.setProperty('--folder-rotation',`${rotation}deg`);
   }
-  function updateScene(p) {
+  function updateScene(p, resumeProgress=p) {
     if(document.body.dataset.overlay)return;
     currentProgress=p;
     const state=window.DYGalleryTimeline.sceneAt?.(p,reduce.matches)||model.sceneAt(p,reduce.matches);
@@ -6049,7 +6050,7 @@ window.DY_CASES = [
     // The preceding resume chapter hides it on short screens.
     document.body.dataset.storyPhase=state.phase;
     if(previousStage!==document.body.dataset.workStage||(document.body.classList.contains('main3-story')&&state.phase==='folder'))placeFolder(false);
-    window.DYResumeScene?.update(p);
+    window.DYResumeScene?.update(resumeProgress);
     const intro=document.getElementById('intro-story');
     intro.style.opacity=String(state.intro);
     scene.style.opacity=String(state.reveal);scene.style.setProperty('--scene-lift',`${state.lift}px`);
